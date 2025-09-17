@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 
 // Colors
 class AppColors {
-  static const primary = Color(0xFFA11072);
-  static const secondary = Color(0xFF00946B);
+  static const primary = Color(0xFF00946B);
+  static const secondary = Color(0xFFA11072);
   static const success = Color(0xFF54AB26);
   static const error = Color(0xFFC41F0D);
   static const warning = Color(0xFFAD1B0B);
