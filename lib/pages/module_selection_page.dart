@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:choose_module_app/constants/app_styles.dart';
+
 
 class ModuleSelectionPage extends StatefulWidget {
 
@@ -12,8 +14,10 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.backgroundMain,
       appBar: AppBar(
-        title: Text("WPM $selectedWPM"), // Titel hängt von selectedWPM an
+        title: Text("WPM $selectedWPM", style: AppTextStyles.heading), // Titel hängt von selectedWPM an
+        backgroundColor: AppColors.primary,
       ),
       body: Center(
         child: Column(
@@ -28,11 +32,16 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 8.0),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: selectedWPM == wpm ? Colors.blue : Colors.grey,
+                      backgroundColor: selectedWPM == wpm 
+                      ? AppColors.secondary
+                      : AppColors.borderLight,
+                      foregroundColor: AppColors.textPrimary,
+                      padding: EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                      textStyle: AppTextStyles.button,
                     ),
                     onPressed: () {
                       setState(() {
-                        selectedWPM = wpm; // Erstellen WPM
+                        selectedWPM = wpm; // WPM erstellen
                       });
                     },
                     child: Text("$wpm"),
@@ -42,8 +51,14 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
             ),
             SizedBox(height: 40),
             ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/confirmation'),
-              child: Text("WPM Wahl bestätigen"),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                textStyle: AppTextStyles.button,
+            ),
+            onPressed: () => Navigator.pushNamed(context, '/confirmation'),
+            child: Text("WPM Wahl bestätigen"),
             ),
           ],
         ),
