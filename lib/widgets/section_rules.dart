@@ -36,8 +36,11 @@ class SectionRules extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Icons.check_circle_outline,
-                      color: AppColors.secondary, size: 20),
+                  Icon(
+                    Icons.check_circle_outline,
+                    color: AppColors.secondary, 
+                    size: 20,
+                  ),
                   SizedBox(width: 8),
                   Text("Frist der Wahl: ", style: AppTextStyles.body),
                   SizedBox(width: 8),
@@ -52,9 +55,16 @@ class SectionRules extends StatelessWidget {
               ),
               SizedBox(height: 6),
               Row(
+                crossAxisAlignment: CrossAxisAlignment.start, // выравниваем по верхнему краю
                 children: [
-                  Icon(Icons.check_circle_outline,
-                      color: AppColors.secondary, size: 20),
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2), // немного вниз, чтобы центр иконки был ближе к тексту
+                    child: Icon(
+                      Icons.check_circle_outline,
+                      color: AppColors.secondary,
+                      size: 20,
+                    ),
+                  ),
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -68,20 +78,18 @@ class SectionRules extends StatelessWidget {
           ),
           SizedBox(height: 20),
           // Taste "Als erledigt kennzeichnen"
-          Center(
-            child: ElevatedButton(
-              onPressed: onCompleted,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.success,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                textStyle: AppTextStyles.button,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+          ElevatedButton(
+            onPressed: onCompleted,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.success,
+              foregroundColor: Colors.white,
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+              textStyle: AppTextStyles.button,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
-              child: Text("Als erledigt kennzeichnen"),
             ),
+            child: Text("Als erledigt kennzeichnen"),
           ),
         ],
       ),
