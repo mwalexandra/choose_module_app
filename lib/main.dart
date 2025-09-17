@@ -19,7 +19,7 @@ class ModuleChooseApp extends StatelessWidget {
       initialRoute: '/modules',
       routes: {
 //        '/login': (context) => LoginPage(),
-        '/modules': (context) => ModuleSelectionPage(wpmNumber: 1),
+        '/modules': (context) => ModuleSelectionPage(),
         '/confirmation': (context) => ConfirmationPage(),
       },
     );
