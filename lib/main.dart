@@ -16,10 +16,10 @@ class ModuleChooseApp extends StatelessWidget {
         primarySwatch: Colors.green,
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
-      initialRoute: '/login',
+      initialRoute: '/modules',
       routes: {
 //        '/login': (context) => LoginPage(),
-        '/modules': (context) => ModuleSelectionPage(),
+        '/modules': (context) => ModuleSelectionPage(wpmNumber: 1),
         '/confirmation': (context) => ConfirmationPage(),
       },
     );
