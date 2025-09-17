@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:choose_module_app/constants/app_styles.dart';
+import 'package:choose_module_app/widgets/section_rules.dart';
 
 class ModuleSelectionPage extends StatefulWidget {
-  @override
+  
+@override
   _ModuleSelectionPageState createState() => _ModuleSelectionPageState();
 }
 
 class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
-  int selectedWPM = 1; // init WPM
+  int selectedWPM = 1;
 
   @override
   Widget build(BuildContext context) {
@@ -19,31 +21,13 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Titel + WPM number
             Row(
               children: [
-                Text(
-                  "WPM",
-                  style: TextStyle(
-                    fontFamily: 'Roboto',
-                    fontSize: 20,
-                    fontWeight: FontWeight.normal,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text("WPM", style: AppTextStyles.body.copyWith(fontSize: 20)),
                 SizedBox(width: 8),
-                Text(
-                  "$selectedWPM",
-                  style: TextStyle(
-                    fontFamily: 'Roboto',
-                    fontSize: 20,
-                    fontWeight: FontWeight.normal,
-                    color: AppColors.textPrimary,
-                  ),
-                ),
+                Text("$selectedWPM", style: AppTextStyles.body.copyWith(fontSize: 20)),
               ],
             ),
-            // WPM Wahltasten
             Row(
               children: List.generate(3, (index) {
                 int wpm = index + 1;
@@ -56,16 +40,11 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                           ? AppColors.secondary
                           : AppColors.borderLight,
                       foregroundColor: AppColors.textPrimary,
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      textStyle: TextStyle(
-                        fontFamily: 'Roboto',
-                        fontSize: 16,
-                        fontWeight: FontWeight.normal,
-                      ),
+                      textStyle: AppTextStyles.body,
                     ),
                     onPressed: () {
                       setState(() {
@@ -87,16 +66,29 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
           ),
         ),
       ),
-      body: Center(
-        child: ElevatedButton(
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppColors.primary,
-            foregroundColor: Colors.white,
-            padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-            textStyle: AppTextStyles.button,
-          ),
-          onPressed: () => Navigator.pushNamed(context, '/confirmation'),
-          child: Text("Wahl bestätigen"),
+      body: SingleChildScrollView(
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Column(
+          children: [
+            // Секция с текстом и списком
+            SectionRules(
+              onCompleted: () {
+                print("Als erledigt kenngezeichnet!");
+              },
+            ),
+            SizedBox(height: 20),
+            // Кнопка подтверждения выбора
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                textStyle: AppTextStyles.button,
+              ),
+              onPressed: () => Navigator.pushNamed(context, '/confirmation'),
+              child: Text("Wahl bestätigen"),
+            ),
+          ],
         ),
       ),
     );
