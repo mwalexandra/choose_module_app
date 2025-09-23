@@ -1,0 +1,89 @@
+[
+    {
+        "specialty": "pi",
+        "lastUpdate": "07.01.2024",
+        "semesters": {
+
+            "wpm1": {
+                "chooseOpenDate": "07.04.2024",
+                "chooseCloseDate": "09.05.2024",
+                "modules": [
+                    {
+                        "id": "0001",
+                        "name": "Embedded Systems I",
+                        "dozent": "Prof. Dr. D. Günther" 
+                    },
+                    {
+                        "id": "0004",
+                        "name": "Mobile Anwendungen I",
+                        "dozent": "Prof. Dr. B. Kasche" 
+                    },
+                    {
+                        "id": "0005",
+                        "name": "Cloud Computing I",
+                        "dozent": "Prof. Dr. B. Kasche" 
+                    },
+                    {
+                        "id": "0006",
+                        "name": "Werkzeuge der Softwareentwicklung",
+                        "dozent": "Prof. Dr. K. Kusche" 
+                    }
+                ]
+            },
+
+            "wpm2": {
+                "chooseOpenDate": "07.10.2024",
+                "chooseCloseDate": "09.11.2024",
+                "modules":[
+                    {
+                        "id": "0002",
+                        "name": "Embedded Systems II",
+                        "dozent": "Prof. Dr. D. Günther" 
+                    },
+                    {
+                        "id": "0007",
+                        "name": "Mobile Anwendungen II",
+                        "dozent": "Prof. Dr. B. Kasche" 
+                    },
+                    {
+                        "id": "0008",
+                        "name": "Cloud Computing II",
+                        "dozent": "Prof. Dr. B. Kasche" 
+                    },
+                    {
+                        "id": "0009",
+                        "name": "Praktische IT-Systeme und interdisziplinäre Anwendungsentwicklung",
+                        "dozent": "Prof. Dr. D. Günther" 
+                    }
+                ]
+            },
+
+            "wpm3": {
+                "chooseOpenDate": "07.04.2025",
+                "chooseCloseDate": "09.05.2025",
+                "modules": [
+                    {
+                        "id": "0010",
+                        "name": "Embedded Systems III",
+                        "dozent": "Prof. Dr. D. Günther" 
+                    },
+                    {
+                        "id": "0011",
+                        "name": "Mobile Anwendungen III",
+                        "dozent": "Prof. Dr. B. Kasche" 
+                    },
+                    {
+                        "id": "0012",
+                        "name": "Cloud Computing III",
+                        "dozent": "Prof. Dr. B. Kasche" 
+                    },
+                    {
+                        "id": "0013",
+                        "name": "Simulation, Animation und Kinematik in CAD und DCC",
+                        "dozent": "S. Herbst" 
+                    }
+                ]
+            }
+        }
+    }
+]

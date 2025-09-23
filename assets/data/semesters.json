@@ -1,0 +1,8 @@
+[
+  {"id": "2025_Winter", "startDate": "2025-03-01", "endDate": "2025-06-30"},
+  {"id": "2025_Sommer", "startDate": "2025-09-01", "endDate": "2025-12-31"},
+  {"id": "2024_Winter", "startDate": "2024-09-01", "endDate": "2024-12-31"},
+  {"id": "2024_Sommer", "startDate": "2025-03-01", "endDate": "2025-06-30"},
+  {"id": "2023_Winter", "startDate": "2023-10-01", "endDate": "2024-02-28"},
+  {"id": "2023_Sommer", "startDate": "2024-09-01", "endDate": "2024-12-31"}
+]

@@ -1,0 +1,24 @@
+[
+    {
+        "id": "g123456pi",
+        "surname": "Makeewa",
+        "startYear": 2023,
+        "specialty": "pi",
+        "selectedModules": {
+            "wpm1": null,
+            "wpm2": null,
+            "wpm3": null
+        }
+    },
+    {
+        "id": "g234567pi",
+        "surname": "Doe",
+        "startYear": 2024,
+        "specialty": "pi",
+        "selectedModules": {
+            "wpm1": null,
+            "wpm2": null,
+            "wpm3": null
+        }
+    }
+]
