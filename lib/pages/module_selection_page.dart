@@ -4,7 +4,6 @@ import 'package:choose_module_app/constants/app_styles.dart';
 import 'package:choose_module_app/widgets/section_rules.dart';
 import 'package:choose_module_app/widgets/section_confirm.dart';
 import 'package:choose_module_app/widgets/section_modules.dart';
-import 'package:choose_module_app/services/data_helpers.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 class ModuleSelectionPage extends StatefulWidget {
@@ -18,7 +17,6 @@ class ModuleSelectionPage extends StatefulWidget {
 
 class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   int selectedWPM = 1;
-
   Map<String, dynamic>? currentStudent;
   Map<String, dynamic>? semestersMap;
   Set<String> selectedModules = {};
@@ -31,6 +29,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   }
 
   Future<void> _loadData() async {
+    // Загрузка студентов
     final String studentsJson = await rootBundle.loadString('assets/data/students.json');
     final List<dynamic> studentsData = json.decode(studentsJson);
 
@@ -42,12 +41,12 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
     if (student != null) {
       setState(() {
         currentStudent = student;
-        selectedModules = student['selectedModules']['wpm$selectedWPM'] != null
-            ? {student['selectedModules']['wpm$selectedWPM']}
-            : {};
+        final sel = student['selectedModules']['wpm$selectedWPM'];
+        selectedModules = sel != null ? {sel} : {};
       });
     }
 
+    // Загрузка модулей
     final String modulesJson = await rootBundle.loadString('assets/data/modules.json');
     final List<dynamic> modulesData = json.decode(modulesJson);
 
@@ -64,29 +63,25 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   }
 
   void _toggleModule(String moduleId) {
-  setState(() {
-    if (selectedModules.contains(moduleId)) {
-      // снимаем выбор
-      selectedModules.remove(moduleId);
-    } else if (selectedModules.length < 2) {
-      // можно выбрать только если меньше 2 модулей
-      selectedModules.add(moduleId);
-    } else {
-      // показываем подсказку пользователю (необязательно)
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Sie können maximal 2 Module auswählen."),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    }
-  });
-}
+    setState(() {
+      if (selectedModules.contains(moduleId)) {
+        selectedModules.remove(moduleId);
+      } else if (selectedModules.length < 2) {
+        selectedModules.add(moduleId);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Sie können maximal 2 Module auswählen."),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    });
+  }
 
   Future<void> _confirmSelection() async {
     if (currentStudent == null) return;
 
-    // Обновляем локальный объект
     setState(() {
       currentStudent!['selectedModules']['wpm$selectedWPM'] = selectedModules.isNotEmpty
           ? selectedModules.first
@@ -94,8 +89,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
       confirmed = true;
     });
 
-    // TODO: тут можно реализовать запись обратно в JSON на сервере / локально
-    // Например, через API или local storage
+    // TODO: здесь можно добавить сохранение в файл или API
   }
 
   @override
@@ -142,7 +136,6 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                     onPressed: () {
                       setState(() {
                         selectedWPM = wpm;
-                        // обновляем выбранные модули при смене WPM
                         final sel = currentStudent!['selectedModules']['wpm$selectedWPM'];
                         selectedModules = sel != null ? {sel} : {};
                         confirmed = false;
@@ -164,17 +157,20 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           children: [
-            // Секция с правилами
             SectionRules(
               chooseOpenDate: semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
               chooseCloseDate: semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
-              onCompleted: () {
-                print("Als erledigt gekennzeichnet!");
-              },
+              onCompleted: () => print("Als erledigt gekennzeichnet!"),
+            ),
+            const SizedBox(height: 20),
+            SectionConfirm(
+                studentId: currentStudent!['id'],
+                onConfirm: () {
+                  Navigator.pushNamed(context, '/confirmation');
+                },
             ),
             const SizedBox(height: 20),
 
-            // Секция с модулями
             SectionModules(
               semestersMap: semestersMap,
               selectedWPM: selectedWPM,
@@ -183,7 +179,6 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
             ),
             const SizedBox(height: 20),
 
-            // Секция подтверждения выбора (только если выбраны 2 модуля)
             if (selectedModules.length == 2 && !confirmed)
               ElevatedButton(
                 onPressed: _confirmSelection,
@@ -198,18 +193,6 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                   elevation: 3,
                 ),
                 child: const Text("Wahl bestätigen"),
-              ),
-
-
-            const SizedBox(height: 20),
-
-            // Секция отображения выбранных модулей после подтверждения
-            if (confirmed)
-              SectionConfirm(
-                studentId: currentStudent!['id'],
-                onConfirm: () {
-                  Navigator.pushNamed(context, '/confirmation');
-                },
               ),
           ],
         ),
