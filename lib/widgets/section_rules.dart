@@ -14,14 +14,14 @@ class SectionRules extends StatelessWidget {
       padding: EdgeInsets.all(20),
       margin: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       decoration: BoxDecoration(
-        color: AppColors.backgroundSubtle, // чуть более тёмный фон
+        color: AppColors.backgroundSubtle, 
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.borderLight, width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Заголовок / текст секции
+          // Section-Titel
           Text(
             "Information zu den Modulen: ",
             style: AppTextStyles.body.copyWith(
@@ -30,7 +30,7 @@ class SectionRules extends StatelessWidget {
             ),
           ),
           SizedBox(height: 10),
-          // Список из двух айтемов
+          // Liste
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -46,19 +46,19 @@ class SectionRules extends StatelessWidget {
                   SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      "$chooseTime",
+                      '$chooseTime',
                       style: AppTextStyles.body,
-                      overflow: TextOverflow.ellipsis, // если текст длинный
+                      overflow: TextOverflow.ellipsis, 
                     ),
                   ),
                 ],
               ),
               SizedBox(height: 6),
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start, // выравниваем по верхнему краю
+                crossAxisAlignment: CrossAxisAlignment.start, 
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(top: 2), // немного вниз, чтобы центр иконки был ближе к тексту
+                    padding: const EdgeInsets.only(top: 2), 
                     child: Icon(
                       Icons.check_circle_outline,
                       color: AppColors.secondary,
