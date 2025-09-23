@@ -1,8 +1,11 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:choose_module_app/constants/app_styles.dart';
 import 'package:choose_module_app/widgets/section_rules.dart';
+import 'package:choose_module_app/widgets/section_confirm.dart';
+import 'package:choose_module_app/widgets/section_modules.dart';
+import 'package:choose_module_app/services/data_helpers.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 class ModuleSelectionPage extends StatefulWidget {
   final String userSurname;
@@ -15,12 +18,11 @@ class ModuleSelectionPage extends StatefulWidget {
 
 class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   int selectedWPM = 1;
-  List<dynamic> students = [];
-  List<dynamic> modules = [];
+
   Map<String, dynamic>? currentStudent;
   Map<String, dynamic>? semestersMap;
-  List<Map<String, dynamic>> availableModules = [];
   Set<String> selectedModules = {};
+  bool confirmed = false;
 
   @override
   void initState() {
@@ -29,87 +31,80 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   }
 
   Future<void> _loadData() async {
-    final studentsJson = await rootBundle.loadString('assets/data/students.json');
-    final modulesJson = await rootBundle.loadString('assets/data/modules.json');
+    final String studentsJson = await rootBundle.loadString('assets/data/students.json');
+    final List<dynamic> studentsData = json.decode(studentsJson);
 
-    final studentsData = json.decode(studentsJson);
-    final modulesData = json.decode(modulesJson);
+    final student = studentsData.firstWhere(
+      (s) => s['surname'] == widget.userSurname,
+      orElse: () => null,
+    );
 
-    setState(() {
-      students = studentsData;
-      modules = modulesData;
-
-      currentStudent = students.firstWhere(
-        (s) => s['surname'].toLowerCase() == widget.userSurname.toLowerCase(),
-        orElse: () => null,
-      );
-    });
-
-    // Найдём объект специальности в modules (в вашем JSON это элемент с "specialty")
-    if (currentStudent != null) {
-      final specialtyName = currentStudent!['specialty'];
-      final specialtyData = modules.firstWhere(
-        (m) => m['specialty'] == specialtyName,
-        orElse: () => null,
-      );
-
-      if (specialtyData != null && specialtyData['semesters'] != null) {
-        // Преобразуем в Map<String, dynamic> для удобного доступа
-        semestersMap = Map<String, dynamic>.from(specialtyData['semesters']);
-      }
+    if (student != null) {
+      setState(() {
+        currentStudent = student;
+        selectedModules = student['selectedModules']['wpm$selectedWPM'] != null
+            ? {student['selectedModules']['wpm$selectedWPM']}
+            : {};
+      });
     }
 
-    _filterModules();
-  }
+    final String modulesJson = await rootBundle.loadString('assets/data/modules.json');
+    final List<dynamic> modulesData = json.decode(modulesJson);
 
-  void _filterModules() {
-    if (currentStudent == null) return;
+    final specialty = modulesData.firstWhere(
+      (m) => m['specialty'] == currentStudent?['specialty'],
+      orElse: () => null,
+    );
 
-    final specialty = currentStudent!['specialty'];
-
-    setState(() {
-      availableModules = modules
-          .where((m) =>
-              m['specialty'] == specialty && m['semester'] == selectedWPM)
-          .map<Map<String, dynamic>>((m) => {
-                'id': m['id'],
-                'name': m['name'],
-              })
-          .toList();
-    });
+    if (specialty != null) {
+      setState(() {
+        semestersMap = Map<String, dynamic>.from(specialty['semesters']);
+      });
+    }
   }
 
   void _toggleModule(String moduleId) {
-    setState(() {
-      if (selectedModules.contains(moduleId)) {
-        selectedModules.remove(moduleId);
-      } else {
-        selectedModules.add(moduleId);
-      }
-    });
-  }
+  setState(() {
+    if (selectedModules.contains(moduleId)) {
+      // снимаем выбор
+      selectedModules.remove(moduleId);
+    } else if (selectedModules.length < 2) {
+      // можно выбрать только если меньше 2 модулей
+      selectedModules.add(moduleId);
+    } else {
+      // показываем подсказку пользователю (необязательно)
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Sie können maximal 2 Module auswählen."),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  });
+}
 
-  void _confirmSelection() {
-    Navigator.pushNamed(
-      context,
-      '/confirmation',
-      arguments: {
-        'surname': currentStudent?['surname'],
-        'modules': selectedModules.toList(),
-      },
-    );
+  Future<void> _confirmSelection() async {
+    if (currentStudent == null) return;
+
+    // Обновляем локальный объект
+    setState(() {
+      currentStudent!['selectedModules']['wpm$selectedWPM'] = selectedModules.isNotEmpty
+          ? selectedModules.first
+          : null;
+      confirmed = true;
+    });
+
+    // TODO: тут можно реализовать запись обратно в JSON на сервере / локально
+    // Например, через API или local storage
   }
 
   @override
   Widget build(BuildContext context) {
-    final semKey = 'wpm$selectedWPM';
-    final chooseOpenDate = (semestersMap != null && semestersMap!.containsKey(semKey))
-        ? (semestersMap![semKey] as Map<String, dynamic>)['chooseOpenDate']?.toString() ?? '—'
-        : '—';
-    final chooseCloseDate = (semestersMap != null && semestersMap!.containsKey(semKey))
-        ? (semestersMap![semKey] as Map<String, dynamic>)['chooseCloseDate']?.toString() ?? '—'
-        : '—';
-
+    if (currentStudent == null || semestersMap == null) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.backgroundMain,
@@ -122,9 +117,8 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
             Row(
               children: [
                 Text("WPM", style: AppTextStyles.body.copyWith(fontSize: 20)),
-                SizedBox(width: 8),
-                Text("$selectedWPM",
-                    style: AppTextStyles.body.copyWith(fontSize: 20)),
+                const SizedBox(width: 8),
+                Text("$selectedWPM", style: AppTextStyles.body.copyWith(fontSize: 20)),
               ],
             ),
             Row(
@@ -139,8 +133,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                           ? AppColors.secondary
                           : AppColors.borderLight,
                       foregroundColor: AppColors.textPrimary,
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -149,7 +142,10 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                     onPressed: () {
                       setState(() {
                         selectedWPM = wpm;
-                        _filterModules();
+                        // обновляем выбранные модули при смене WPM
+                        final sel = currentStudent!['selectedModules']['wpm$selectedWPM'];
+                        selectedModules = sel != null ? {sel} : {};
+                        confirmed = false;
                       });
                     },
                     child: Text("$wpm"),
@@ -159,63 +155,62 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
             ),
           ],
         ),
-        bottom: PreferredSize(
+        bottom: const PreferredSize(
           preferredSize: Size.fromHeight(1),
-          child: Container(
-            color: Colors.black,
-            height: 1,
-          ),
+          child: Divider(height: 1, color: Colors.black),
         ),
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           children: [
-            // Секция правил
+            // Секция с правилами
             SectionRules(
-              chooseOpenDate: chooseOpenDate,
-              chooseCloseDate: chooseCloseDate,
+              chooseOpenDate: semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
+              chooseCloseDate: semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
               onCompleted: () {
-                print("Als erledigt kenngezeichnet!");
+                print("Als erledigt gekennzeichnet!");
               },
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-            // Список модулей
-            availableModules.isEmpty
-                ? Text("Нет доступных модулей для WPM $selectedWPM")
-                : Column(
-                    children: availableModules.map((module) {
-                      final isSelected = selectedModules.contains(module['id']);
-                      return ListTile(
-                        title: Text(module['name'],
-                            style: AppTextStyles.body),
-                        trailing: Icon(
-                          isSelected
-                              ? Icons.check_box
-                              : Icons.check_box_outline_blank,
-                          color: isSelected
-                              ? AppColors.secondary
-                              : AppColors.borderLight,
-                        ),
-                        onTap: () => _toggleModule(module['id']),
-                      );
-                    }).toList(),
-                  ),
-
-            SizedBox(height: 30),
-
-            // Кнопка подтверждения выбора
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                textStyle: AppTextStyles.button,
-              ),
-              onPressed: selectedModules.isEmpty ? null : _confirmSelection,
-              child: Text("Wahl bestätigen"),
+            // Секция с модулями
+            SectionModules(
+              semestersMap: semestersMap,
+              selectedWPM: selectedWPM,
+              selectedModuleIds: selectedModules,
+              onModuleToggle: _toggleModule,
             ),
+            const SizedBox(height: 20),
+
+            // Секция подтверждения выбора (только если выбраны 2 модуля)
+            if (selectedModules.length == 2 && !confirmed)
+              ElevatedButton(
+                onPressed: _confirmSelection,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                  textStyle: AppTextStyles.button.copyWith(fontSize: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 3,
+                ),
+                child: const Text("Wahl bestätigen"),
+              ),
+
+
+            const SizedBox(height: 20),
+
+            // Секция отображения выбранных модулей после подтверждения
+            if (confirmed)
+              SectionConfirm(
+                studentId: currentStudent!['id'],
+                onConfirm: () {
+                  Navigator.pushNamed(context, '/confirmation');
+                },
+              ),
           ],
         ),
       ),
