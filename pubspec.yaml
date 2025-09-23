@@ -58,8 +58,8 @@ flutter:
   uses-material-design: true
   assets:
     - assets/data/students.json
-    - assets/data/specialties.json
     - assets/data/semesters.json
+    - assets/data/modules.json
 
   # To add assets to your application, add an assets section, like this:
   # assets:
