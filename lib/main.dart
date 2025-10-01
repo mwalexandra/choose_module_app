@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'pages/login_page.dart';
 import 'pages/module_selection_page.dart';
-import 'pages/confirmation_page.dart';
+//import 'pages/confirmation_page.dart';
 
 void main() {
   runApp(ModuleChooseApp());
@@ -29,9 +29,16 @@ class ModuleChooseApp extends StatelessWidget {
 
           case '/modules':
             final args = settings.arguments as Map<String, dynamic>?;
-            final studentId = args?['userID'] ?? 'Unknown';
+            final studentId = args?['userID'];
+            if (studentId == null) {
+              return MaterialPageRoute(
+                builder: (_) => Scaffold(
+                  body: Center(child: Text('Error: studentId is required')),
+                ),
+              );
+            }
             return MaterialPageRoute(
-              builder: (_) => ModuleSelectionPage(studentId: studentId),
+              builder: (_) => ModuleSelectionPage(studentId: studentId, name: '',, surname: '',),
             );
 
           //case '/confirmation':

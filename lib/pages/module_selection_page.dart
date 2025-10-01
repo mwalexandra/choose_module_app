@@ -1,15 +1,21 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:choose_module_app/constants/app_styles.dart';
 import 'package:choose_module_app/widgets/section_rules.dart';
 import 'package:choose_module_app/widgets/section_confirm.dart';
 import 'package:choose_module_app/widgets/section_modules.dart';
-import 'package:flutter/services.dart' show rootBundle;
+import '../services/data_helpers.dart';
 
 class ModuleSelectionPage extends StatefulWidget {
   final String studentId;
+  final String name;
+  final String surname;
 
-  const ModuleSelectionPage({Key? key, required this.studentId}) : super(key: key);
+  const ModuleSelectionPage({
+    Key? key,
+    required this.studentId,
+    required this.name,
+    required this.surname,
+  }) : super(key: key);
 
   @override
   _ModuleSelectionPageState createState() => _ModuleSelectionPageState();
@@ -17,9 +23,9 @@ class ModuleSelectionPage extends StatefulWidget {
 
 class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   int selectedWPM = 1;
-  Map<String, dynamic>? currentStudent;
+  Student? currentStudent;
   Map<String, dynamic>? semestersMap;
-  Set<String> selectedModules = {}; 
+  Set<String> selectedModules = {};
   bool confirmed = false;
 
   @override
@@ -29,37 +35,18 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   }
 
   Future<void> _loadData() async {
-    // Загрузка студентов
-    final String studentsJson = await rootBundle.loadString('assets/data/students.json');
-    final List<dynamic> studentsData = json.decode(studentsJson);
+    // Загружаем студента по ID
+    final student = await DataHelpers.getStudentById(widget.studentId);
 
-    final student = studentsData.firstWhere(
-      (s) => s['id'] == widget.studentId,
-      orElse: () => null,
-    );
+    // Загружаем специализацию и семестры
+    //final specialty = await DataHelpers.getSpecialtyByStudent(student);
 
-    if (student != null) {
-      setState(() {
-        currentStudent = student;
-        final sel = student['selectedModules']['wpm$selectedWPM'];
-        selectedModules = sel != null ? {sel} : {};
-      });
-    }
-
-    // Загрузка модулей
-    final String modulesJson = await rootBundle.loadString('assets/data/modules.json');
-    final List<dynamic> modulesData = json.decode(modulesJson);
-
-    final specialty = modulesData.firstWhere(
-      (m) => m['specialty'] == currentStudent?['specialty'],
-      orElse: () => null,
-    );
-
-    if (specialty != null) {
-      setState(() {
-        semestersMap = Map<String, dynamic>.from(specialty['semesters']);
-      });
-    }
+    setState(() {
+      currentStudent = student;
+      //semestersMap = specialty["semesters"];
+      final sel = student?.selectedModules["wpm$selectedWPM"];
+      selectedModules = sel != null ? {sel} : {};
+    });
   }
 
   void _toggleModule(String moduleId) {
@@ -83,13 +70,12 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
     if (currentStudent == null) return;
 
     setState(() {
-      currentStudent!['selectedModules']['wpm$selectedWPM'] = selectedModules.isNotEmpty
-          ? selectedModules.first
-          : null;
+      currentStudent!.selectedModules["wpm$selectedWPM"] =
+          selectedModules.isNotEmpty ? selectedModules.first : null;
       confirmed = true;
     });
 
-    // TODO: здесь можно добавить сохранение в файл или API
+    // TODO: сохранить изменения (файл/API)
   }
 
   @override
@@ -108,6 +94,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // Левая часть: WPM
             Row(
               children: [
                 Text("WPM", style: AppTextStyles.body.copyWith(fontSize: 20)),
@@ -115,36 +102,10 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                 Text("$selectedWPM", style: AppTextStyles.body.copyWith(fontSize: 20)),
               ],
             ),
-            Row(
-              children: List.generate(3, (index) {
-                int wpm = index + 1;
-                bool isSelected = selectedWPM == wpm;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected
-                          ? AppColors.secondary
-                          : AppColors.borderLight,
-                      foregroundColor: AppColors.textPrimary,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: AppTextStyles.body,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        selectedWPM = wpm;
-                        final sel = currentStudent!['selectedModules']['wpm$selectedWPM'];
-                        selectedModules = sel != null ? {sel} : {};
-                        confirmed = false;
-                      });
-                    },
-                    child: Text("$wpm"),
-                  ),
-                );
-              }),
+            // Правая часть: имя + фамилия студента
+            Text(
+              "${widget.name} ${widget.surname}",
+              style: AppTextStyles.body.copyWith(fontSize: 18),
             ),
           ],
         ),
@@ -158,16 +119,18 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
         child: Column(
           children: [
             SectionRules(
-              chooseOpenDate: semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
-              chooseCloseDate: semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
+              chooseOpenDate:
+                  semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
+              chooseCloseDate:
+                  semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
               onCompleted: () => print("Als erledigt gekennzeichnet!"),
             ),
             const SizedBox(height: 20),
             SectionConfirm(
-                studentId: currentStudent!['id'],
-                onConfirm: () {
-                  Navigator.pushNamed(context, '/confirmation');
-                },
+              studentId: currentStudent!.id,
+              onConfirm: () {
+                Navigator.pushNamed(context, '/confirmation');
+              },
             ),
             const SizedBox(height: 20),
 
@@ -185,7 +148,8 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
                   textStyle: AppTextStyles.button.copyWith(fontSize: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

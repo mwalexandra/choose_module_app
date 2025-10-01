@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/data_helpers.dart';
+import 'package:go_router/go_router.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -39,10 +40,8 @@ class _LoginPageState extends State<LoginPage> {
       );
 
       if (student.id.isNotEmpty && student.password == password) {
-        Navigator.pushReplacementNamed(
-          context, 
-          "/modules",
-          arguments: {"userID": userID, "studentName": "${student.name} ${student.surname}"},
+        context.go(
+          "/modules/${student.id}/${student.name}/${student.surname}",
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
