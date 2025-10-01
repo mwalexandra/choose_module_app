@@ -7,9 +7,9 @@ import 'package:choose_module_app/widgets/section_modules.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
 class ModuleSelectionPage extends StatefulWidget {
-  final String userSurname;
+  final String studentId;
 
-  const ModuleSelectionPage({Key? key, required this.userSurname}) : super(key: key);
+  const ModuleSelectionPage({Key? key, required this.studentId}) : super(key: key);
 
   @override
   _ModuleSelectionPageState createState() => _ModuleSelectionPageState();
@@ -19,7 +19,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   int selectedWPM = 1;
   Map<String, dynamic>? currentStudent;
   Map<String, dynamic>? semestersMap;
-  Set<String> selectedModules = {};
+  Set<String> selectedModules = {}; 
   bool confirmed = false;
 
   @override
@@ -34,7 +34,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
     final List<dynamic> studentsData = json.decode(studentsJson);
 
     final student = studentsData.firstWhere(
-      (s) => s['surname'] == widget.userSurname,
+      (s) => s['id'] == widget.studentId,
       orElse: () => null,
     );
 

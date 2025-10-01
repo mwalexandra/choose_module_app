@@ -29,9 +29,9 @@ class ModuleChooseApp extends StatelessWidget {
 
           case '/modules':
             final args = settings.arguments as Map<String, dynamic>?;
-            final surname = args?['surname'] ?? 'Unknown';
+            final studentId = args?['Matrikelnummer'] ?? 'Unknown';
             return MaterialPageRoute(
-              builder: (_) => ModuleSelectionPage(userSurname: surname),
+              builder: (_) => ModuleSelectionPage(studentId: studentId),
             );
 
           case '/confirmation':
