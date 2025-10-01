@@ -6,21 +6,20 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _surnameController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _studentIDController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   void _login() {
-    final surname = _surnameController.text.trim();
 
-    if (surname.isNotEmpty) {
-  
-      Navigator.pushNamed(
-        context,
-        '/modules',
-        arguments: {'surname': surname},
-      );
+    if (_formKey.currentState!.validate()) {
+      final studentID = _studentIDController.text.trim();
+      final password = _passwordController.text.trim();
+      //TODO add authentication logic here
+      print("Login: $studentID | Password: $password");
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Put your surname here')),
+        SnackBar(content: Text('Put your student ID and password here')),
       );
     }
   }
@@ -29,25 +28,41 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Authorisation'),
+        title: Text('Login'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(
-              controller: _surnameController,
-              decoration: InputDecoration(
-                labelText: 'Surname',
-                border: OutlineInputBorder(),
+            Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              TextFormField(
+                controller: _studentIDController,
+                decoration: InputDecoration(labelText: "Student ID"),
+                textInputAction: TextInputAction.next, // Enter → перейти к паролю
+                validator: (value) =>
+                    value!.isEmpty ? "Enter Student ID" : null,
               ),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _login,
-              child: Text('Sign in'),
-            ),
+              TextFormField(
+                controller: _passwordController,
+                decoration: InputDecoration(labelText: "Password"),
+                obscureText: true,
+                textInputAction: TextInputAction.done, // Enter → сабмит
+                onFieldSubmitted: (_) => _login(), // обработчик Enter
+                validator: (value) =>
+                    value!.isEmpty ? "Enter Password" : null,
+              ),
+              SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: _login,
+                child: Text("Login"),
+              ),
+            ],
+          ),
+        ),
           ],
         ),
       ),
