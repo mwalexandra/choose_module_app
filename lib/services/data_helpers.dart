@@ -1,6 +1,28 @@
 import 'dart:convert';
 import 'package:flutter/services.dart' show rootBundle;
 
+class Student {
+  final String name;
+  final String password;
+
+  Student({required this.name, required this.password});
+
+  factory Student.fromJson(Map<String, dynamic> json) {
+    return Student(
+      name: json['name'],
+      password: json['password'],
+    );
+  }
+}
+
+class DataHelpers {
+  static Future<List<Student>> loadStudents() async {
+    final String response = await rootBundle.loadString('assets/data/students.json');
+    final data = json.decode(response) as List<dynamic>;
+    return data.map((s) => Student.fromJson(s)).toList();
+  }
+}
+
 /// Возвращает список объектов модулей для студента
 Future<List<Map<String, dynamic>>> getSelectedModules(String studentId) async {
   final String studentsJson = await rootBundle.loadString('assets/data/students.json');

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/data_helpers.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -7,63 +8,63 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _studentIDController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  void _login() {
-
+  Future<void> _submitLogin() async {
     if (_formKey.currentState!.validate()) {
-      final studentID = _studentIDController.text.trim();
+      final username = _usernameController.text.trim();
       final password = _passwordController.text.trim();
-      //TODO add authentication logic here
-      print("Login: $studentID | Password: $password");
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Put your student ID and password here')),
+
+      final students = await DataHelpers.loadStudents();
+      final student = students.firstWhere(
+        (s) => s.name == username,
+        orElse: () => Student(name: "", password: ""),
       );
+
+      if (student.name.isNotEmpty && student.password == password) {
+        Navigator.pushReplacementNamed(context, "/modules");
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Неверные имя или пароль")),
+        );
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Login'),
-      ),
+      appBar: AppBar(title: Text("Login")),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Form(
+        child: Form(
           key: _formKey,
           child: Column(
             children: [
               TextFormField(
-                controller: _studentIDController,
-                decoration: InputDecoration(labelText: "Student ID"),
-                textInputAction: TextInputAction.next, // Enter → перейти к паролю
+                controller: _usernameController,
+                decoration: InputDecoration(labelText: "Имя студента"),
+                textInputAction: TextInputAction.next,
                 validator: (value) =>
-                    value!.isEmpty ? "Enter Student ID" : null,
+                    value!.isEmpty ? "Введите имя" : null,
               ),
               TextFormField(
                 controller: _passwordController,
-                decoration: InputDecoration(labelText: "Password"),
+                decoration: InputDecoration(labelText: "Пароль"),
                 obscureText: true,
-                textInputAction: TextInputAction.done, // Enter → сабмит
-                onFieldSubmitted: (_) => _login(), // обработчик Enter
+                textInputAction: TextInputAction.done,
+                onFieldSubmitted: (_) => _submitLogin(),
                 validator: (value) =>
-                    value!.isEmpty ? "Enter Password" : null,
+                    value!.isEmpty ? "Введите пароль" : null,
               ),
               SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _login,
-                child: Text("Login"),
+                onPressed: _submitLogin,
+                child: Text("Войти"),
               ),
             ],
           ),
-        ),
-          ],
         ),
       ),
     );
