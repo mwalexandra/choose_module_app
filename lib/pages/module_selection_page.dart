@@ -35,16 +35,22 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   }
 
   Future<void> _loadData() async {
-    // Загружаем студента по ID
+    // Загружаем студента
     final student = await DataHelpers.getStudentById(widget.studentId);
 
+    if (student == null) {
+      // Если студент не найден, возвращаем на login
+      Navigator.pushReplacementNamed(context, '/login');
+      return;
+    }
+
     // Загружаем специализацию и семестры
-    //final specialty = await DataHelpers.getSpecialtyByStudent(student);
+    final specialty = await DataHelpers.getSpecialtyByStudent(student.specialty);
 
     setState(() {
       currentStudent = student;
-      //semestersMap = specialty["semesters"];
-      final sel = student?.selectedModules["wpm$selectedWPM"];
+      semestersMap = specialty?['semesters'] ?? {};
+      final sel = student.selectedModules["wpm$selectedWPM"];
       selectedModules = sel != null ? {sel} : {};
     });
   }
@@ -75,7 +81,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
       confirmed = true;
     });
 
-    // TODO: сохранить изменения (файл/API)
+    // TODO: добавить сохранение изменений в файл или через API
   }
 
   @override
@@ -102,7 +108,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                 Text("$selectedWPM", style: AppTextStyles.body.copyWith(fontSize: 20)),
               ],
             ),
-            // Правая часть: имя + фамилия студента
+            // Правая часть: имя + фамилия
             Text(
               "${widget.name} ${widget.surname}",
               style: AppTextStyles.body.copyWith(fontSize: 18),
@@ -119,10 +125,8 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
         child: Column(
           children: [
             SectionRules(
-              chooseOpenDate:
-                  semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
-              chooseCloseDate:
-                  semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
+              chooseOpenDate: semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
+              chooseCloseDate: semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
               onCompleted: () => print("Als erledigt gekennzeichnet!"),
             ),
             const SizedBox(height: 20),
@@ -133,7 +137,6 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
               },
             ),
             const SizedBox(height: 20),
-
             SectionModules(
               semestersMap: semestersMap,
               selectedWPM: selectedWPM,
@@ -141,15 +144,13 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
               onModuleToggle: _toggleModule,
             ),
             const SizedBox(height: 20),
-
             if (selectedModules.length == 2 && !confirmed)
               ElevatedButton(
                 onPressed: _confirmSelection,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
                   textStyle: AppTextStyles.button.copyWith(fontSize: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

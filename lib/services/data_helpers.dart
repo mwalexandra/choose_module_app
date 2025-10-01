@@ -137,6 +137,20 @@ class DataHelpers {
     );
   }
 
+  // Получение данных о специальности студента (specialty)
+  static Future<Map<String, dynamic>?> getSpecialtyByStudent(String specialty) async {
+    final String modulesJson =
+        await rootBundle.loadString('assets/data/modules.json');
+    final List<dynamic> modulesData = json.decode(modulesJson);
+
+    final specialtyData = modulesData.firstWhere(
+      (m) => m['specialty'] == specialty,
+      orElse: () => null,
+    );
+
+    return specialtyData != null ? Map<String, dynamic>.from(specialtyData) : null;
+  }
+
   /// Получить все модули (без фильтрации)
   static Future<List<Module>> getAllModules() async {
     final specialties = await loadSpecialties();

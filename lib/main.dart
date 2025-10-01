@@ -30,6 +30,9 @@ class ModuleChooseApp extends StatelessWidget {
           case '/modules':
             final args = settings.arguments as Map<String, dynamic>?;
             final studentId = args?['userID'];
+            final name = args?['name'] ?? '';
+            final surname = args?['surname'] ?? '';
+
             if (studentId == null) {
               return MaterialPageRoute(
                 builder: (_) => Scaffold(
@@ -38,7 +41,11 @@ class ModuleChooseApp extends StatelessWidget {
               );
             }
             return MaterialPageRoute(
-              builder: (_) => ModuleSelectionPage(studentId: studentId, name: '',, surname: '',),
+              builder: (_) => ModuleSelectionPage(
+                studentId: studentId, 
+                name: name, 
+                surname: surname
+                ),
             );
 
           //case '/confirmation':
