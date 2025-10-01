@@ -4,18 +4,18 @@ import 'package:choose_module_app/services/data_helpers.dart';
 
 class SectionConfirm extends StatelessWidget {
   final String studentId;
-  final VoidCallback onConfirm;
+  final VoidCallback onConfirm; // onEdit
 
   const SectionConfirm({
     super.key,
     required this.studentId,
-    required this.onConfirm,
+    required this.onConfirm, // onEdit
   });
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Map<String, dynamic>>>(
-      future: getSelectedModules(studentId),
+    return FutureBuilder<List<Module>>(
+      future: DataHelpers.getSelectedModules(studentId),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
@@ -58,7 +58,7 @@ class SectionConfirm extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              "${module['name']} – ${module['dozent']}",
+                              "${module.name} – ${module.dozent}",
                               style: AppTextStyles.body,
                             ),
                           ),
@@ -77,7 +77,7 @@ class SectionConfirm extends StatelessWidget {
 
               // Кнопка подтверждения
               ElevatedButton(
-                onPressed: onConfirm,
+                onPressed: onConfirm, // onEdit
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -88,7 +88,7 @@ class SectionConfirm extends StatelessWidget {
                   ),
                   elevation: 3,
                 ),
-                child: const Text("Wahl bestätigen"),
+                child: const Text("Wahl ändern"), // TODO onEdit
               ),
             ],
           ),

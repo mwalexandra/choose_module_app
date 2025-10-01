@@ -8,25 +8,45 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _passwordController = TextEditingController();
+  late TextEditingController _userIDController;
+  late TextEditingController _passwordController;
+
+  @override
+  void initState() {
+    super.initState();
+    _userIDController = TextEditingController();
+    _passwordController = TextEditingController();
+  }
+
+  @override
+  void dispose() {
+    _userIDController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   Future<void> _submitLogin() async {
     if (_formKey.currentState!.validate()) {
-      final username = _usernameController.text.trim();
+      final userID = _userIDController.text.trim();
       final password = _passwordController.text.trim();
+
+      print("userID=$userID password=$password"); // отладка
 
       final students = await DataHelpers.loadStudents();
       final student = students.firstWhere(
-        (s) => s.name == username,
-        orElse: () => Student(name: "", password: ""),
+        (s) => s.id == userID,
+        orElse: () => Student(id: "", password: "", selectedModules: {}, name: '', surname: '', startYear: 0, specialty: ''),
       );
 
-      if (student.name.isNotEmpty && student.password == password) {
-        Navigator.pushReplacementNamed(context, "/modules");
+      if (student.id.isNotEmpty && student.password == password) {
+        Navigator.pushReplacementNamed(
+          context, 
+          "/modules",
+          arguments: {"userID": userID, "studentName": "${student.name} ${student.surname}"},
+        );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Неверные имя или пароль")),
+          SnackBar(content: Text("Student not found or incorrect password")),
         );
       }
     }
@@ -43,25 +63,25 @@ class _LoginPageState extends State<LoginPage> {
           child: Column(
             children: [
               TextFormField(
-                controller: _usernameController,
-                decoration: InputDecoration(labelText: "Имя студента"),
+                controller: _userIDController,
+                decoration: InputDecoration(labelText: "Student ID"),
                 textInputAction: TextInputAction.next,
                 validator: (value) =>
-                    value!.isEmpty ? "Введите имя" : null,
+                    value!.isEmpty ? "Enter Student ID" : null,
               ),
               TextFormField(
                 controller: _passwordController,
-                decoration: InputDecoration(labelText: "Пароль"),
+                decoration: InputDecoration(labelText: "Password"),
                 obscureText: true,
                 textInputAction: TextInputAction.done,
                 onFieldSubmitted: (_) => _submitLogin(),
                 validator: (value) =>
-                    value!.isEmpty ? "Введите пароль" : null,
+                    value!.isEmpty ? "Enter Password" : null,
               ),
               SizedBox(height: 20),
               ElevatedButton(
                 onPressed: _submitLogin,
-                child: Text("Войти"),
+                child: Text("Login"),
               ),
             ],
           ),

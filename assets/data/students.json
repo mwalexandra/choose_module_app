@@ -2,6 +2,7 @@
     {
         "id": "g123456pi",
         "password": "g123456pi",
+        "name": "Alexandra",
         "surname": "Makeewa",
         "startYear": 2023,
         "specialty": "pi",
@@ -14,6 +15,7 @@
     {
         "id": "g234567pi",
         "password": "g234567pi",
+        "name": "John",
         "surname": "Doe",
         "startYear": 2024,
         "specialty": "pi",
