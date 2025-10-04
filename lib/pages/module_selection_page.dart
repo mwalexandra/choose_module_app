@@ -35,23 +35,35 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   }
 
   Future<void> _loadData() async {
-    // Загружаем студента
-    final student = await DataHelpers.getStudentById(widget.studentId);
+    // 1) загрузим студента
+    final Student? student = await DataHelpers.getStudentById(widget.studentId);
 
     if (student == null) {
-      // Если студент не найден, возвращаем на login
+      // если студент не найден — вернём на логин
       Navigator.pushReplacementNamed(context, '/login');
       return;
     }
 
-    // Загружаем специализацию и семестры
-    final specialty = await DataHelpers.getSpecialtyByStudent(student.specialty);
+    // 2) загрузим specialty по имени специальности (строке)
+    final Map<String, dynamic>? specialtyData =
+        await DataHelpers.getSpecialtyByStudent(student.specialty);
 
+    // 3) извлечём semesters безопасно
+    Map<String, dynamic>? loadedSemesters;
+    if (specialtyData != null) {
+      final sems = specialtyData['semesters'];
+      if (sems is Map) {
+        loadedSemesters = Map<String, dynamic>.from(sems);
+      }
+    }
+
+    // 4) установим состояние
     setState(() {
       currentStudent = student;
-      semestersMap = specialty?['semesters'] ?? {};
+      semestersMap = loadedSemesters;
       final sel = student.selectedModules["wpm$selectedWPM"];
-      selectedModules = sel != null ? {sel} : {};
+      selectedModules = (sel != null) ? {sel} : <String>{};
+      confirmed = false;
     });
   }
 
@@ -81,11 +93,13 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
       confirmed = true;
     });
 
-    // TODO: добавить сохранение изменений в файл или через API
+    // TODO: сохранить изменения в файл или через API
+    // например: await DataHelpers.updateSelectedModule(currentStudent!, selectedWPM, ...);
   }
 
   @override
   Widget build(BuildContext context) {
+    // показываем лоадер, пока нет данных о студенте или семестрах
     if (currentStudent == null || semestersMap == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -100,15 +114,40 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
         title: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            // Левая часть: WPM
+            // WPM-кнопки
             Row(
-              children: [
-                Text("WPM", style: AppTextStyles.body.copyWith(fontSize: 20)),
-                const SizedBox(width: 8),
-                Text("$selectedWPM", style: AppTextStyles.body.copyWith(fontSize: 20)),
-              ],
+              children: List.generate(3, (index) {
+                final int wpm = index + 1;
+                final bool isSelected = selectedWPM == wpm;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor:
+                          isSelected ? AppColors.secondary : AppColors.borderLight,
+                      foregroundColor: AppColors.textPrimary,
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      textStyle: AppTextStyles.body,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        selectedWPM = wpm;
+                        final sel = currentStudent?.selectedModules["wpm$selectedWPM"];
+                        selectedModules = (sel != null) ? {sel} : <String>{};
+                        confirmed = false;
+                      });
+                    },
+                    child: Text("WPM $wpm"),
+                  ),
+                );
+              }),
             ),
-            // Правая часть: имя + фамилия
+
+            // имя студента
             Text(
               "${widget.name} ${widget.surname}",
               style: AppTextStyles.body.copyWith(fontSize: 18),
@@ -124,12 +163,15 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           children: [
+            // Получаем данные семестра безопасно: semestersMap может иметь ключ 'wpm1' и т.д.
             SectionRules(
               chooseOpenDate: semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
-              chooseCloseDate: semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
+              chooseCloseDate:
+                  semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
               onCompleted: () => print("Als erledigt gekennzeichnet!"),
             ),
             const SizedBox(height: 20),
+
             SectionConfirm(
               studentId: currentStudent!.id,
               onConfirm: () {
@@ -137,6 +179,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
               },
             ),
             const SizedBox(height: 20),
+
             SectionModules(
               semestersMap: semestersMap,
               selectedWPM: selectedWPM,
@@ -144,13 +187,15 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
               onModuleToggle: _toggleModule,
             ),
             const SizedBox(height: 20),
+
             if (selectedModules.length == 2 && !confirmed)
               ElevatedButton(
                 onPressed: _confirmSelection,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
                   textStyle: AppTextStyles.button.copyWith(fontSize: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
