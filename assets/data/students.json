@@ -1,7 +1,7 @@
 [
     {
-        "id": "g123456pi",
-        "password": "g123456pi",
+        "id": "123",
+        "password": "123",
         "name": "Alexandra",
         "surname": "Makeewa",
         "startYear": 2023,
@@ -13,8 +13,8 @@
         }
     },
     {
-        "id": "g234567pi",
-        "password": "g234567pi",
+        "id": "234",
+        "password": "234",
         "name": "John",
         "surname": "Doe",
         "startYear": 2024,

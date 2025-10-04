@@ -29,7 +29,7 @@ class ModuleChooseApp extends StatelessWidget {
 
           case '/modules':
             final args = settings.arguments as Map<String, dynamic>?;
-            final studentId = args?['userID'];
+            final studentId = args?['studentId'];
             final name = args?['name'] ?? '';
             final surname = args?['surname'] ?? '';
 
