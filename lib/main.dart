@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'pages/login_page.dart';
 import 'pages/module_selection_page.dart';
 //import 'pages/confirmation_page.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp();
   runApp(ModuleChooseApp());
 }
 
@@ -54,11 +57,7 @@ class ModuleChooseApp extends StatelessWidget {
           //  return MaterialPageRoute(builder: (_) => ConfirmationPage());
 
           default:
-            return MaterialPageRoute(
-              builder: (_) => Scaffold(
-                body: Center(child: Text('Unknown route: ${settings.name}')),
-              ),
-            );
+            return MaterialPageRoute(builder: (_) => LoginPage());
         }
       }
     );
