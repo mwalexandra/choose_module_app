@@ -32,6 +32,7 @@ class ModuleChooseApp extends StatelessWidget {
             final studentId = args?['studentId'];
             final name = args?['name'] ?? '';
             final surname = args?['surname'] ?? '';
+            final specialty = args?['specialty'] ?? '';
 
             if (studentId == null) {
               return MaterialPageRoute(
@@ -44,7 +45,8 @@ class ModuleChooseApp extends StatelessWidget {
               builder: (_) => ModuleSelectionPage(
                 studentId: studentId, 
                 name: name, 
-                surname: surname
+                surname: surname,
+                specialty: specialty,
                 ),
             );
 

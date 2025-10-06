@@ -1,24 +1,29 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:choose_module_app/constants/app_styles.dart';
 import 'package:choose_module_app/widgets/section_rules.dart';
 import 'package:choose_module_app/widgets/section_confirm.dart';
 import 'package:choose_module_app/widgets/section_modules.dart';
 import '../services/data_helpers.dart';
+import 'dart:io';
 
 class ModuleSelectionPage extends StatefulWidget {
   final String studentId;
   final String name;
   final String surname;
+  final String specialty;
 
   const ModuleSelectionPage({
-    Key? key,
+    super.key,
     required this.studentId,
     required this.name,
     required this.surname,
-  }) : super(key: key);
+    required this.specialty,
+  });
 
   @override
-  _ModuleSelectionPageState createState() => _ModuleSelectionPageState();
+  State<ModuleSelectionPage> createState() => _ModuleSelectionPageState();
 }
 
 class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
@@ -35,20 +40,19 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   }
 
   Future<void> _loadData() async {
-    // 1) загрузим студента
+    // Загружаем данные студента
     final Student? student = await DataHelpers.getStudentById(widget.studentId);
 
     if (student == null) {
-      // если студент не найден — вернём на логин
       Navigator.pushReplacementNamed(context, '/login');
       return;
     }
 
-    // 2) загрузим specialty по имени специальности (строке)
+    // Загружаем specialty по строке
     final Map<String, dynamic>? specialtyData =
         await DataHelpers.getSpecialtyByStudent(student.specialty);
 
-    // 3) извлечём semesters безопасно
+    // Извлекаем семестры безопасно
     Map<String, dynamic>? loadedSemesters;
     if (specialtyData != null) {
       final sems = specialtyData['semesters'];
@@ -57,12 +61,14 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
       }
     }
 
-    // 4) установим состояние
+    // Устанавливаем состояние
     setState(() {
       currentStudent = student;
       semestersMap = loadedSemesters;
       final sel = student.selectedModules["wpm$selectedWPM"];
-      selectedModules = (sel != null) ? {sel} : <String>{};
+      selectedModules = sel != null
+          ? Set<String>.from(List<String>.from(sel))
+          : <String>{};
       confirmed = false;
     });
   }
@@ -87,19 +93,49 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   Future<void> _confirmSelection() async {
     if (currentStudent == null) return;
 
+    // Обновляем данные текущего студента
+    currentStudent!.selectedModules["wpm$selectedWPM"] =
+        selectedModules.toList();
+
+    // Сохраняем обновленные данные студентов
+    await _updateStudentsFile(currentStudent!);
+
     setState(() {
-      currentStudent!.selectedModules["wpm$selectedWPM"] =
-          selectedModules.isNotEmpty ? selectedModules.first : null;
       confirmed = true;
     });
 
-    // TODO: сохранить изменения в файл или через API
-    // например: await DataHelpers.updateSelectedModule(currentStudent!, selectedWPM, ...);
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text("Ihre Auswahl wurde gespeichert."),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _updateStudentsFile(Student updatedStudent) async {
+    try {
+      // Загружаем текущий JSON
+      final String jsonString =
+          await rootBundle.loadString('assets/data/students.json');
+      final List<dynamic> data = jsonDecode(jsonString);
+
+      // Обновляем запись для текущего студента
+      for (var i = 0; i < data.length; i++) {
+        if (data[i]['id'] == updatedStudent.id) {
+          data[i]['selectedModules'] = updatedStudent.selectedModules;
+        }
+      }
+
+      // Перезаписываем JSON (только для десктопа / веба через File)
+      final file = File('assets/data/students.json');
+      await file.writeAsString(const JsonEncoder.withIndent('  ').convert(data));
+    } catch (e) {
+      debugPrint("Fehler beim Speichern der Datei: $e");
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // показываем лоадер, пока нет данных о студенте или семестрах
     if (currentStudent == null || semestersMap == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
@@ -136,8 +172,11 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                     onPressed: () {
                       setState(() {
                         selectedWPM = wpm;
-                        final sel = currentStudent?.selectedModules["wpm$selectedWPM"];
-                        selectedModules = (sel != null) ? {sel} : <String>{};
+                        final sel =
+                            currentStudent?.selectedModules["wpm$selectedWPM"];
+                        selectedModules = (sel != null)
+                            ? Set<String>.from(List<String>.from(sel))
+                            : <String>{};
                         confirmed = false;
                       });
                     },
@@ -163,9 +202,9 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
         padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           children: [
-            // Получаем данные семестра безопасно: semestersMap может иметь ключ 'wpm1' и т.д.
             SectionRules(
-              chooseOpenDate: semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
+              chooseOpenDate:
+                  semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
               chooseCloseDate:
                   semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
               onCompleted: () => print("Als erledigt gekennzeichnet!"),

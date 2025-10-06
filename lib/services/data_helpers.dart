@@ -10,7 +10,7 @@ class Student {
   final String surname;
   final int startYear;
   final String specialty;
-  final Map<String, String?> selectedModules;
+  final Map<String, dynamic> selectedModules;
 
   Student({
     required this.id,
