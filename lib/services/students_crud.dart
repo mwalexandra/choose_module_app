@@ -1,5 +1,6 @@
 import 'package:firebase_database/firebase_database.dart';
 
+// ignore: deprecated_member_use
 final databaseReference = FirebaseDatabase.instance.reference();
 
 void createStudent(String studentId, String name, String surname, String specialty) {

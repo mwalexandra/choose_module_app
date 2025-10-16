@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
-import '../services/data_helpers.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -31,26 +33,34 @@ class _LoginPageState extends State<LoginPage> {
     final userID = _userIDController.text.trim();
     final password = _passwordController.text.trim();
 
-    final students = await DataHelpers.loadStudents();
-    final student = students.firstWhere(
-      (s) => s.id == userID,
-      orElse: () => Student(id: '', password: '', selectedModules: {}, name: '', surname: '', startYear: 0, specialty: ''),
-    );
+    // ignore: deprecated_member_use
+    final databaseReference = FirebaseDatabase.instance.reference();
+    final snapshot = await databaseReference.child('students').child(userID).once();
 
-    if (student.id.isNotEmpty && student.password == password) {
-      // Навигация на страницу модулей с передачей studentId
-      Navigator.pushReplacementNamed(
-        context,
-        '/modules',
-        arguments: {
-          'studentId': student.id,
-          'name': student.name,
-          'surname': student.surname,
-        },
-      );
+    if (snapshot.snapshot.value != null) {
+      final studentData = Map<String, dynamic>.from(snapshot.snapshot.value as Map);
+      final studentPassword = studentData['password'];
+
+      if (studentPassword == password) {
+        // Навигация на страницу модулей с передачей studentId
+        Navigator.pushReplacementNamed(
+          context,
+          '/modules',
+          arguments: {
+            'studentId': userID,
+            'name': studentData['name'],
+            'surname': studentData['surname'],
+            'specialty': studentData['specialty'],
+          },
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Incorrect password")),
+        );
+      }
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Student not found or incorrect password")),
+        const SnackBar(content: Text("Student not found")),
       );
     }
   }
