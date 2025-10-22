@@ -5,7 +5,7 @@ import '../../../constants/app_colors.dart';
 class StudentHeader extends StatelessWidget {
   final String name;
   final String surname;
-  final String specialty;
+  final String kurs;
   final int selectedWpm;
   final Function(int) onSelectWpm;
 
@@ -13,7 +13,7 @@ class StudentHeader extends StatelessWidget {
     super.key,
     required this.name,
     required this.surname,
-    required this.specialty,
+    required this.kurs,
     required this.selectedWpm,
     required this.onSelectWpm,
   });
@@ -29,7 +29,7 @@ class StudentHeader extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 10)],
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
@@ -39,7 +39,7 @@ class StudentHeader extends StatelessWidget {
             children: [
               Text('$name $surname', style: AppTextStyles.heading(isDark: isDark).copyWith(color: textColor)),
               const SizedBox(height: 4),
-              Text(specialty, style: AppTextStyles.subheading(isDark: isDark).copyWith(color: textColor)),
+              Text(kurs, style: AppTextStyles.subheading(isDark: isDark).copyWith(color: textColor)),
               const SizedBox(height: 8),
               Text('Selected WPM: $selectedWpm', style: AppTextStyles.body(isDark: isDark).copyWith(color: textColor)),
             ],

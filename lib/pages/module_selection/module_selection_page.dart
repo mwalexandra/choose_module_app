@@ -10,14 +10,14 @@ class ModuleSelectionPage extends StatefulWidget {
   final String studentId;
   final String name;
   final String surname;
-  final String specialty;
+  final String kurs;
 
   const ModuleSelectionPage({
     super.key,
     required this.studentId,
     required this.name,
     required this.surname,
-    required this.specialty,
+    required this.kurs,
   });
 
   @override
@@ -136,7 +136,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                     StudentHeader(
                       name: widget.name,
                       surname: widget.surname,
-                      specialty: widget.specialty,
+                      kurs: widget.kurs,
                       selectedWpm: selectedWpm,
                       onSelectWpm: _selectWpm,
                     ),
