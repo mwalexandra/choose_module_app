@@ -1,3 +1,4 @@
+import 'package:choose_module_app/constants/app_styles.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
 
@@ -43,7 +44,6 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // Переходим на страницу выбора модулей
     setState(() => _loading = false);
     Navigator.pushReplacementNamed(
       context,
@@ -60,32 +60,84 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[100],
       body: Center(
-        child: _loading
-            ? const CircularProgressIndicator()
-            : Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    TextField(
-                      controller: _idController,
-                      decoration: const InputDecoration(labelText: 'ID'),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: _passwordController,
-                      decoration: const InputDecoration(labelText: 'Password'),
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _login,
-                      child: const Text('Login'),
-                    ),
-                  ],
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+          child: Container(
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
                 ),
-              ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Student Login',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: _idController,
+                  decoration: InputDecoration(
+                    labelText: 'ID',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.backgroundSubtle,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    filled: true,
+                    fillColor: AppColors.backgroundSubtle,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _login,
+                    style: ElevatedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      backgroundColor: AppColors.primary,
+                    ),
+                    child: _loading
+                        ? const CircularProgressIndicator(
+                            color: AppColors.backgroundMain,
+                          )
+                        : const Text(
+                            'Login',
+                            style: AppTextStyles.button,
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
