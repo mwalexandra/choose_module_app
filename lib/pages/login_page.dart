@@ -11,115 +11,93 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final _idController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _database = FirebaseDatabase.instance.ref("students");
-  String? _errorMessage;
+  final DatabaseReference _db = FirebaseDatabase.instance.ref();
+
   bool _loading = false;
 
   Future<void> _login() async {
-    setState(() {
-      _errorMessage = null;
-      _loading = true;
-    });
-
-    final id = _idController.text.trim();
+    final studentId = _idController.text.trim();
     final password = _passwordController.text.trim();
 
-    if (id.isEmpty || password.isEmpty) {
-      setState(() {
-        _errorMessage = "Bitte ID und Passwort eingeben";
-        _loading = false;
-      });
+    if (studentId.isEmpty || password.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Bitte ID und Passwort eingeben')));
       return;
     }
 
+    setState(() => _loading = true);
+
     try {
-      // читаем запись студента по ID
-      final snapshot = await _database.child(id).get();
+      // Поиск студента по полю "id" (ключи 0,1,...)
+      final snapshot = await _db
+          .child('students')
+          .orderByChild('id')
+          .equalTo(studentId)
+          .get();
 
       if (!snapshot.exists) {
-        setState(() {
-          _errorMessage = "Student nicht gefunden";
-          _loading = false;
-        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Student nicht gefunden')));
+        setState(() => _loading = false);
         return;
       }
 
-      final data = Map<String, dynamic>.from(snapshot.value as Map);
+      // Преобразуем snapshot.value в Map<String, dynamic>
+      final Map<String, dynamic> studentsMap =
+          Map<String, dynamic>.from(snapshot.value as Map);
+          
+      // Получаем первый найденный объект
+      final studentDataRaw = studentsMap.values.first;
+      final studentData = Map<String, dynamic>.from(studentDataRaw);
 
-      if (data['password'] != password) {
-        setState(() {
-          _errorMessage = "Falsches Passwort";
-          _loading = false;
-        });
+      // Проверяем пароль
+      if (studentData['password'] != password) {
+        ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Falsches Passwort')));
+        setState(() => _loading = false);
         return;
       }
 
-      // вход успешен
-      Navigator.pushNamed(
-        context,
-        '/modules',
-        arguments: {
-          'studentId': id,
-          'name': data['name'] ?? '',
-          'surname': data['surname'] ?? '',
-          'specialty': data['specialty'] ?? '',
-        },
-      );
+      // Переход на страницу выбора модулей
+      Navigator.pushReplacementNamed(context, '/modules', arguments: {
+        'studentId': studentId,
+        'name': studentData['name'] ?? '',
+        'surname': studentData['surname'] ?? '',
+        'specialty': studentData['specialty'] ?? '',
+      });
     } catch (e) {
-      setState(() {
-        _errorMessage = "Fehler beim Zugriff auf die Datenbank";
-      });
-    } finally {
-      setState(() {
-        _loading = false;
-      });
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Fehler: $e')));
     }
+
+    setState(() => _loading = false);
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Student Login')),
       body: Center(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(20),
           child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Bitte Student-ID und Passwort eingeben',
-                style: TextStyle(fontSize: 18),
-              ),
-              const SizedBox(height: 20),
               TextField(
                 controller: _idController,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Student ID',
-                ),
+                decoration: const InputDecoration(labelText: 'Student ID'),
               ),
-              const SizedBox(height: 15),
               TextField(
                 controller: _passwordController,
+                decoration: const InputDecoration(labelText: 'Passwort'),
                 obscureText: true,
-                decoration: const InputDecoration(
-                  border: OutlineInputBorder(),
-                  labelText: 'Passwort',
-                ),
               ),
               const SizedBox(height: 20),
-              if (_errorMessage != null)
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                ),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: _loading ? null : _login,
-                child: _loading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : const Text('Anmelden'),
-              ),
+              _loading
+                  ? const CircularProgressIndicator()
+                  : ElevatedButton(
+                      onPressed: _login,
+                      child: const Text('Login'),
+                    ),
             ],
           ),
         ),
