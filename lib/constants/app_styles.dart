@@ -18,6 +18,8 @@ class AppColors {
 
   static const borderLight = Color(0xFFE0E0DF);
   static const borderStrong = Color(0xFF184637);
+
+  static const card = Color(0xFFFFFFFF);   
 }
 
 // Fonts
