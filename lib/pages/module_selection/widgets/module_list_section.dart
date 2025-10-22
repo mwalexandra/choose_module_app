@@ -3,13 +3,13 @@ import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
 
 class ModuleListSection extends StatelessWidget {
-  final List<Map<String, dynamic>> modules;
+  final List<Map<String, dynamic>> availableModules;
   final List<String> selectedModuleIds;
   final Function(String moduleId, bool isSelected) onToggleSelection;
 
   const ModuleListSection({
     super.key,
-    required this.modules,
+    required this.availableModules,
     required this.selectedModuleIds,
     required this.onToggleSelection,
   });
@@ -26,8 +26,8 @@ class ModuleListSection extends StatelessWidget {
           style: AppTextStyles.subheading(isDark: isDark),
         ),
         const SizedBox(height: 10),
-        ...modules.map((module) {
-          final moduleId = module['id'].toString();
+        ...availableModules.map((module) {
+          final moduleId = module['id']?.toString() ?? '';
           final isSelected = selectedModuleIds.contains(moduleId);
 
           return Container(
@@ -36,14 +36,14 @@ class ModuleListSection extends StatelessWidget {
               color: isDark ? AppColors.darkBackgroundMain : AppColors.card,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: AppColors.borderLight.withValues(alpha: 0.4),
+                color: AppColors.borderLight.withAlpha(100),
               ),
               boxShadow: [
                 if (!isDark)
-                  BoxShadow(
+                  const BoxShadow(
                     color: Colors.black12,
                     blurRadius: 4,
-                    offset: const Offset(0, 2),
+                    offset: Offset(0, 2),
                   ),
               ],
             ),
@@ -59,7 +59,7 @@ class ModuleListSection extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      module['name'] ?? '',
+                      module['name'] ?? '—',
                       style: AppTextStyles.body(isDark: isDark),
                     ),
                   ),
@@ -81,12 +81,12 @@ class ModuleListSection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        module['description'] ?? '',
+                        module['description'] ?? 'Нет описания',
                         style: AppTextStyles.body(isDark: isDark),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Доцент: ${module['lecturer'] ?? '—'}',
+                        'Доцент: ${module['dozent'] ?? '—'}',
                         style: AppTextStyles.body(isDark: isDark),
                       ),
                     ],

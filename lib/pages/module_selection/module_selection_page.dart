@@ -26,84 +26,111 @@ class ModuleSelectionPage extends StatefulWidget {
 
 class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   int selectedWpm = 1;
-  Map<int, dynamic> wpmData = {};
+  Map<String, dynamic> semestersData = {};
   bool loading = true;
-  //List<String> selectedModules = [];
   bool hasChanges = false;
-  // 🔹 Все доступные модули из Firebase
+
   List<Map<String, dynamic>> availableModules = [];
-   // 🔹 Список ID выбранных модулей (для чекбоксов)
   List<String> selectedModuleIds = [];
-  // 🔹 Подробные данные о выбранных модулях (для секции "Выбранные модули")
   List<Map<String, dynamic>> selectedModulesData = [];
 
   @override
   void initState() {
     super.initState();
-    _loadWpmData();
     _loadModules();
   }
 
-  Future<void> _loadWpmData() async {
-    final ref = FirebaseDatabase.instance.ref('students/${widget.studentId}/wpm');
-    final snapshot = await ref.get();
-
-    if (snapshot.exists) {
-      final Map<String, dynamic> rawMap =
-          Map<String, dynamic>.from(snapshot.value as Map);
-
-      setState(() {
-        wpmData = rawMap.map((key, value) => MapEntry(int.parse(key), value));
-        loading = false;
-      });
-    } else {
-      setState(() {
-        wpmData = {};
-        loading = false;
-      });
-    }
+  void _selectWpm(int wpm) {
+    setState(() {
+      selectedWpm = wpm;
+      _filterModulesByWpm();
+    });
   }
-  void _selectWpm(int wpm) => setState(() => selectedWpm = wpm);
 
+  /// Загружает все модули курса студента
   Future<void> _loadModules() async {
     setState(() => loading = true);
 
-    final snapshot = await FirebaseDatabase.instance.ref('modules').get();
-    if (snapshot.exists) {
-      final data = Map<String, dynamic>.from(snapshot.value as Map);
-      availableModules = data.entries.map((entry) {
-        final module = Map<String, dynamic>.from(entry.value);
-        module['id'] = entry.key; // добавим ID для удобства
-        return module;
-      }).toList();
+    try {
+      final kurs = widget.kurs;
+      final semestersRef = FirebaseDatabase.instance.ref('modules/$kurs/semesters');
+      final studentModulesRef = FirebaseDatabase.instance
+          .ref('students/${widget.studentId}/selectedModules');
+
+      // Получаем все семестры курса
+      final semestersSnapshot = await semestersRef.get();
+      Map<String, dynamic> semestersMap = {};
+      if (semestersSnapshot.exists && semestersSnapshot.value != null) {
+        semestersMap = Map<String, dynamic>.from(semestersSnapshot.value as Map);
+      }
+
+      // Получаем выбранные модули студента
+      final studentModulesSnapshot = await studentModulesRef.get();
+      Map<String, dynamic> studentModulesMap = {};
+      if (studentModulesSnapshot.exists && studentModulesSnapshot.value != null) {
+        studentModulesMap = Map<String, dynamic>.from(studentModulesSnapshot.value as Map);
+      }
+
+      setState(() {
+        semestersData = semestersMap;
+      });
+
+      // После загрузки данных фильтруем модули по WPM и отмечаем выбранные
+      _filterModulesByWpm(studentModulesMap);
+    } catch (e) {
+      debugPrint('Ошибка при загрузке модулей: $e');
+      setState(() {
+        semestersData = {};
+        availableModules = [];
+        selectedModuleIds = [];
+        selectedModulesData = [];
+      });
     }
 
     setState(() => loading = false);
   }
 
-  // Вызывается при переключении чекбокса
+  /// Фильтрует модули по выбранному WPM и отмечает уже выбранные
+  void _filterModulesByWpm([Map<String, dynamic>? studentModulesMap]) {
+    final wpmKey = 'wpm$selectedWpm';
+    final modulesList = (semestersData[wpmKey]?['modules'] as List?)
+            ?.map((m) => Map<String, dynamic>.from(m as Map))
+            .toList() ??
+        [];
+
+    // Подгружаем уже выбранные модули студента, если есть
+    final alreadySelected = List<String>.from(
+        studentModulesMap?[wpmKey] ?? []
+    );
+
+    setState(() {
+      availableModules = modulesList;
+      selectedModuleIds = alreadySelected;
+      selectedModulesData = availableModules
+          .where((module) => selectedModuleIds.contains(module['id'].toString()))
+          .toList();
+      hasChanges = false;
+    });
+  }
+
   void _toggleModuleSelection(String moduleId, bool isSelected) {
     setState(() {
       hasChanges = true;
-
       if (isSelected) {
         selectedModuleIds.add(moduleId);
       } else {
         selectedModuleIds.remove(moduleId);
       }
-
-      // Обновляем подробные данные выбранных модулей
       selectedModulesData = availableModules
           .where((module) => selectedModuleIds.contains(module['id'].toString()))
           .toList();
     });
   }
 
-  // Нажатие кнопки "Подтвердить выбор"
   Future<void> _confirmSelection() async {
-    // здесь запись выбранных модулей в Firebase
-    final studentId = widget.studentId; // или как у тебя передаётся ID студента
-    final ref = FirebaseDatabase.instance.ref('students/$studentId/selectedModules');
+    final studentId = widget.studentId;
+    final ref = FirebaseDatabase.instance
+        .ref('students/$studentId/selectedModules/wpm$selectedWpm');
 
     await ref.set(selectedModuleIds);
 
@@ -150,7 +177,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                     ),
                     const SizedBox(height: 24),
                     ModuleListSection(
-                      modules: availableModules,
+                      availableModules: availableModules,
                       selectedModuleIds: selectedModuleIds,
                       onToggleSelection: _toggleModuleSelection,
                     ),
