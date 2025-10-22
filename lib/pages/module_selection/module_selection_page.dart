@@ -41,6 +41,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   void initState() {
     super.initState();
     _loadWpmData();
+    _loadModules();
   }
 
   Future<void> _loadWpmData() async {
@@ -62,8 +63,23 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
       });
     }
   }
-
   void _selectWpm(int wpm) => setState(() => selectedWpm = wpm);
+
+  Future<void> _loadModules() async {
+    setState(() => loading = true);
+
+    final snapshot = await FirebaseDatabase.instance.ref('modules').get();
+    if (snapshot.exists) {
+      final data = Map<String, dynamic>.from(snapshot.value as Map);
+      availableModules = data.entries.map((entry) {
+        final module = Map<String, dynamic>.from(entry.value);
+        module['id'] = entry.key; // добавим ID для удобства
+        return module;
+      }).toList();
+    }
+
+    setState(() => loading = false);
+  }
 
   // Вызывается при переключении чекбокса
   void _toggleModuleSelection(String moduleId, bool isSelected) {
