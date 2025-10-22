@@ -9,98 +9,83 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _idController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final DatabaseReference _db = FirebaseDatabase.instance.ref();
-
+  final TextEditingController _idController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
   bool _loading = false;
 
   Future<void> _login() async {
     final studentId = _idController.text.trim();
-    final password = _passwordController.text.trim();
+    final password = _passwordController.text;
 
-    if (studentId.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Bitte ID und Passwort eingeben')));
-      return;
-    }
+    if (studentId.isEmpty || password.isEmpty) return;
 
     setState(() => _loading = true);
 
-    try {
-      // Поиск студента по полю "id" (ключи 0,1,...)
-      final snapshot = await _db
-          .child('students')
-          .orderByChild('id')
-          .equalTo(studentId)
-          .get();
+    final snapshot = await FirebaseDatabase.instance
+        .ref('students/$studentId')
+        .get();
 
-      if (!snapshot.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Student nicht gefunden')));
-        setState(() => _loading = false);
-        return;
-      }
-
-      // Преобразуем snapshot.value в Map<String, dynamic>
-      final Map<String, dynamic> studentsMap =
-          Map<String, dynamic>.from(snapshot.value as Map);
-          
-      // Получаем первый найденный объект
-      final studentDataRaw = studentsMap.values.first;
-      final studentData = Map<String, dynamic>.from(studentDataRaw);
-
-      // Проверяем пароль
-      if (studentData['password'] != password) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Falsches Passwort')));
-        setState(() => _loading = false);
-        return;
-      }
-
-      // Переход на страницу выбора модулей
-      Navigator.pushReplacementNamed(context, '/modules', arguments: {
-        'studentId': studentId,
-        'name': studentData['name'] ?? '',
-        'surname': studentData['surname'] ?? '',
-        'specialty': studentData['specialty'] ?? '',
-      });
-    } catch (e) {
+    if (!snapshot.exists) {
+      setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Fehler: $e')));
+        const SnackBar(content: Text('Student not found')),
+      );
+      return;
     }
 
+    final data = Map<String, dynamic>.from(snapshot.value as Map);
+
+    if (data['password'] != password) {
+      setState(() => _loading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Incorrect password')),
+      );
+      return;
+    }
+
+    // Переходим на страницу выбора модулей
     setState(() => _loading = false);
+    Navigator.pushReplacementNamed(
+      context,
+      '/modules',
+      arguments: {
+        'studentId': studentId,
+        'name': data['name'] ?? '',
+        'surname': data['surname'] ?? '',
+        'specialty': data['specialty'] ?? '',
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: _idController,
-                decoration: const InputDecoration(labelText: 'Student ID'),
-              ),
-              TextField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: 'Passwort'),
-                obscureText: true,
-              ),
-              const SizedBox(height: 20),
-              _loading
-                  ? const CircularProgressIndicator()
-                  : ElevatedButton(
+        child: _loading
+            ? const CircularProgressIndicator()
+            : Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: _idController,
+                      decoration: const InputDecoration(labelText: 'ID'),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: _passwordController,
+                      decoration: const InputDecoration(labelText: 'Password'),
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 20),
+                    ElevatedButton(
                       onPressed: _login,
                       child: const Text('Login'),
                     ),
-            ],
-          ),
-        ),
+                  ],
+                ),
+              ),
       ),
     );
   }

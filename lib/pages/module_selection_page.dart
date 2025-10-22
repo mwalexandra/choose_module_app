@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-import 'package:choose_module_app/constants/app_styles.dart';
-import 'package:choose_module_app/widgets/section_rules.dart';
-import 'package:choose_module_app/widgets/section_confirm.dart';
-import 'package:choose_module_app/widgets/section_modules.dart';
+import '../widgets/section_modules.dart';
+import '../widgets/section_rules.dart';
 
 class ModuleSelectionPage extends StatefulWidget {
   final String studentId;
@@ -25,43 +23,48 @@ class ModuleSelectionPage extends StatefulWidget {
 
 class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   int selectedWPM = 1;
-  Map<String, dynamic>? semestersMap;
+  Map<String, dynamic>? modulesData; // Модули по специальности
   Set<String> selectedModules = {};
+  bool loading = true;
   bool confirmed = false;
-
-  final DatabaseReference dbRef = FirebaseDatabase.instance.ref();
 
   @override
   void initState() {
     super.initState();
-    _loadStudentData();
+    _loadModules();
   }
 
-  Future<void> _loadStudentData() async {
-    final studentSnap = await dbRef.child('students/${widget.studentId}').get();
-    if (!studentSnap.exists) {
-      Navigator.pushReplacementNamed(context, '/login');
-      return;
-    }
-    final studentData = Map<String, dynamic>.from(studentSnap.value as Map);
-
-    // Загружаем модули по specialty
-    final modulesSnap = await dbRef
-        .child('modules')
-        .orderByChild('specialty')
-        .equalTo(widget.specialty)
+  Future<void> _loadModules() async {
+    final snapshot = await FirebaseDatabase.instance
+        .ref('modules/${widget.specialty}')
         .get();
 
-    if (!modulesSnap.exists) return;
-    final specialtyData = Map<String, dynamic>.from(modulesSnap.children.first.value as Map);
-    final sems = specialtyData['semesters'] as Map<dynamic, dynamic>;
-    final loadedSemesters = sems.map((k, v) => MapEntry(k.toString(), Map<String, dynamic>.from(v)));
+    if (!snapshot.exists) {
+      setState(() => loading = false);
+      return;
+    }
+
+    final data = Map<String, dynamic>.from(snapshot.value as Map);
+
+    // Загружаем выбранные модули студента
+    final studentSnap = await FirebaseDatabase.instance
+        .ref('students/${widget.studentId}/modules')
+        .get();
+
+    Set<String> initialSelection = {};
+    if (studentSnap.exists) {
+      final wpmMap =
+          Map<String, dynamic>.from(studentSnap.value as Map)['wpm$selectedWPM'] ??
+              [];
+      if (wpmMap is List) {
+        initialSelection = wpmMap.whereType<String>().where((s) => s.isNotEmpty).toSet();
+      }
+    }
 
     setState(() {
-      semestersMap = loadedSemesters;
-      final sel = studentData['modules']?['wpm$selectedWPM'] ?? [];
-      selectedModules = Set<String>.from(List<String>.from(sel));
-      confirmed = false;
+      modulesData = data;
+      selectedModules = initialSelection;
+      loading = false;
     });
   }
 
@@ -71,106 +74,50 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
         selectedModules.remove(moduleId);
       } else if (selectedModules.length < 2) {
         selectedModules.add(moduleId);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text("Sie können maximal 2 Module auswählen."),
-            duration: Duration(seconds: 2),
-          ),
-        );
       }
     });
   }
 
   Future<void> _confirmSelection() async {
-    if (semestersMap == null) return;
+    final toSave = selectedModules.toList();
+    while (toSave.length < 2) toSave.add("");
 
-    await dbRef.child('students/${widget.studentId}/modules/wpm$selectedWPM')
-        .set(selectedModules.toList());
+    await FirebaseDatabase.instance
+        .ref('students/${widget.studentId}/modules/wpm$selectedWPM')
+        .set(toSave);
 
     setState(() {
       confirmed = true;
     });
 
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Ihre Auswahl wurde gespeichert."),
-        duration: Duration(seconds: 2),
-      ),
+      const SnackBar(content: Text("Auswahl gespeichert")),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (semestersMap == null) {
+    if (loading || modulesData == null) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
     return Scaffold(
-      backgroundColor: AppColors.backgroundMain,
       appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: List.generate(3, (index) {
-                final wpm = index + 1;
-                final isSelected = selectedWPM == wpm;
-                return Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isSelected
-                          ? AppColors.secondary
-                          : AppColors.borderLight,
-                      foregroundColor: AppColors.textPrimary,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      textStyle: AppTextStyles.body,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        selectedWPM = wpm;
-                        selectedModules = Set<String>.from(
-                          semestersMap!['wpm$wpm']['selectedModules'] ?? []
-                        );
-                        confirmed = false;
-                      });
-                    },
-                    child: Text("WPM $wpm"),
-                  ),
-                );
-              }),
-            ),
-            Text(
-              "${widget.name} ${widget.surname}",
-              style: AppTextStyles.body.copyWith(fontSize: 18),
-            ),
-          ],
-        ),
-        bottom: const PreferredSize(
-          preferredSize: Size.fromHeight(1),
-          child: Divider(height: 1, color: Colors.black),
-        ),
+        title: Text('${widget.name} ${widget.surname}'),
       ),
       body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 20),
         child: Column(
           children: [
             SectionRules(
-              chooseOpenDate: semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
-              chooseCloseDate: semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
-              onCompleted: () => print("Als erledigt gekennzeichnet!"),
+              chooseOpenDate: modulesData!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
+              chooseCloseDate: modulesData!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
+              onCompleted: () {},
             ),
             const SizedBox(height: 20),
             SectionModules(
-              semestersMap: semestersMap,
+              semestersMap: modulesData,
               selectedWPM: selectedWPM,
               selectedModuleIds: selectedModules,
               onModuleToggle: _toggleModule,
@@ -179,18 +126,43 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
             if (selectedModules.length == 2 && !confirmed)
               ElevatedButton(
                 onPressed: _confirmSelection,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-                  textStyle: AppTextStyles.button.copyWith(fontSize: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  elevation: 3,
-                ),
                 child: const Text("Wahl bestätigen"),
               ),
+            const SizedBox(height: 20),
+            // WPM переключение
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(3, (i) {
+                final wpm = i + 1;
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      // сохраняем текущие выбранные перед сменой WPM
+                      await _confirmSelection();
+                      // переключаем WPM
+                      final studentSnap = await FirebaseDatabase.instance
+                          .ref('students/${widget.studentId}/modules/wpm$wpm')
+                          .get();
+                      Set<String> newSelection = {};
+                      if (studentSnap.exists) {
+                        final list = studentSnap.value as List<dynamic>;
+                        newSelection = list
+                            .whereType<String>()
+                            .where((s) => s.isNotEmpty)
+                            .toSet();
+                      }
+                      setState(() {
+                        selectedWPM = wpm;
+                        selectedModules = newSelection;
+                        confirmed = false;
+                      });
+                    },
+                    child: Text('WPM $wpm'),
+                  ),
+                );
+              }),
+            ),
           ],
         ),
       ),
