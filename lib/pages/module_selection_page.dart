@@ -54,8 +54,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
     Set<String> initialSelection = {};
     if (studentSnap.exists) {
       final wpmMap =
-          Map<String, dynamic>.from(studentSnap.value as Map)['wpm$selectedWPM'] ??
-              [];
+          Map<String, dynamic>.from(studentSnap.value as Map)['wpm$selectedWPM'] ?? <String>[];
       if (wpmMap is List) {
         initialSelection = wpmMap.whereType<String>().where((s) => s.isNotEmpty).toSet();
       }
