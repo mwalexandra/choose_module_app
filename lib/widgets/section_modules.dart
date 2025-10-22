@@ -28,7 +28,7 @@ class SectionModules extends StatelessWidget {
       return const Center(child: Text("Keine Module für diesen WPM verfügbar"));
     }
 
-    final List<dynamic> modules = semesterData['modules'];
+    final List<dynamic> modules = List<dynamic>.from(semesterData['modules']);
 
     return Container(
       width: double.infinity,
@@ -51,7 +51,8 @@ class SectionModules extends StatelessWidget {
           ),
           const SizedBox(height: 12),
           ...modules.map((module) {
-            final moduleId = module['id'] ?? '';
+            final moduleMap = Map<String, dynamic>.from(module);
+            final moduleId = moduleMap['id']?.toString() ?? '';
             final isSelected = selectedModuleIds.contains(moduleId);
 
             return GestureDetector(
@@ -71,17 +72,17 @@ class SectionModules extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      module['name'] ?? "Unbekannt",
+                      moduleMap['name'] ?? "Unbekannt",
                       style: AppTextStyles.body.copyWith(fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      "Dozent: ${module['dozent'] ?? '-'}",
+                      "Dozent: ${moduleMap['dozent'] ?? '-'}",
                       style: AppTextStyles.body.copyWith(fontSize: 14, color: AppColors.textSecondary),
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      "ID: ${module['id'] ?? '-'}",
+                      "ID: $moduleId",
                       style: AppTextStyles.body.copyWith(fontSize: 12, color: AppColors.textSecondary),
                     ),
                   ],
