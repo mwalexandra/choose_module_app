@@ -1,12 +1,9 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:firebase_database/firebase_database.dart';
 import 'package:choose_module_app/constants/app_styles.dart';
 import 'package:choose_module_app/widgets/section_rules.dart';
 import 'package:choose_module_app/widgets/section_confirm.dart';
 import 'package:choose_module_app/widgets/section_modules.dart';
-import '../services/data_helpers.dart';
-import 'dart:io';
 
 class ModuleSelectionPage extends StatefulWidget {
   final String studentId;
@@ -27,50 +24,68 @@ class ModuleSelectionPage extends StatefulWidget {
 }
 
 class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
+  final DatabaseReference _db = FirebaseDatabase.instance.ref();
   int selectedWPM = 1;
-  Student? currentStudent;
   Map<String, dynamic>? semestersMap;
   Set<String> selectedModules = {};
   bool confirmed = false;
+  bool loading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadStudentData();
   }
 
-  Future<void> _loadData() async {
-    // Загружаем данные студента
-    final Student? student = await DataHelpers.getStudentById(widget.studentId);
+  Future<void> _loadStudentData() async {
+    try {
+      // Данные студента
+      final studentSnap =
+          await _db.child('students/${widget.studentId}').get();
 
-    if (student == null) {
-      Navigator.pushReplacementNamed(context, '/login');
-      return;
-    }
-
-    // Загружаем specialty по строке
-    final Map<String, dynamic>? specialtyData =
-        await DataHelpers.getSpecialtyByStudent(student.specialty);
-
-    // Извлекаем семестры безопасно
-    Map<String, dynamic>? loadedSemesters;
-    if (specialtyData != null) {
-      final sems = specialtyData['semesters'];
-      if (sems is Map) {
-        loadedSemesters = Map<String, dynamic>.from(sems);
+      if (!studentSnap.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Student is not found.')),
+        );
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
       }
-    }
 
-    // Устанавливаем состояние
-    setState(() {
-      currentStudent = student;
-      semestersMap = loadedSemesters;
-      final sel = student.selectedModules["wpm$selectedWPM"];
-      selectedModules = sel != null
-          ? Set<String>.from(List<String>.from(sel))
+      final studentData =
+          Map<String, dynamic>.from(studentSnap.value as Map<dynamic, dynamic>);
+
+      // Данные специальности
+      final specialtySnap =
+          await _db.child('specialties/${widget.specialty}').get();
+
+      Map<String, dynamic>? specialtyData;
+      if (specialtySnap.exists) {
+        specialtyData =
+            Map<String, dynamic>.from(specialtySnap.value as Map<dynamic, dynamic>);
+      }
+
+      Map<String, dynamic>? loadedSemesters;
+      if (specialtyData != null && specialtyData['semesters'] != null) {
+        loadedSemesters =
+            Map<String, dynamic>.from(specialtyData['semesters'] as Map);
+      }
+
+      // Получаем выбранные модули
+      final sel = studentData['selectedModules']?['wpm$selectedWPM'];
+      final selected = (sel is List)
+          ? Set<String>.from(sel.map((e) => e.toString()))
           : <String>{};
-      confirmed = false;
-    });
+
+      setState(() {
+        semestersMap = loadedSemesters;
+        selectedModules = selected;
+        confirmed = false;
+        loading = false;
+      });
+    } catch (e) {
+      debugPrint("Error loading data: $e");
+      setState(() => loading = false);
+    }
   }
 
   void _toggleModule(String moduleId) {
@@ -82,7 +97,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("Sie können maximal 2 Module auswählen."),
+            content: Text("You can select a maximum of 2 modules."),
             duration: Duration(seconds: 2),
           ),
         );
@@ -91,54 +106,43 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   }
 
   Future<void> _confirmSelection() async {
-    if (currentStudent == null) return;
-
-    // Обновляем данные текущего студента
-    currentStudent!.selectedModules["wpm$selectedWPM"] =
-        selectedModules.toList();
-
-    // Сохраняем обновленные данные студентов
-    await _updateStudentsFile(currentStudent!);
-
-    setState(() {
-      confirmed = true;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("Ihre Auswahl wurde gespeichert."),
-        duration: Duration(seconds: 2),
-      ),
-    );
-  }
-
-  Future<void> _updateStudentsFile(Student updatedStudent) async {
     try {
-      // Загружаем текущий JSON
-      final String jsonString =
-          await rootBundle.loadString('assets/data/students.json');
-      final List<dynamic> data = jsonDecode(jsonString);
+      await _db
+          .child('students/${widget.studentId}/selectedModules/wpm$selectedWPM')
+          .set(selectedModules.toList());
 
-      // Обновляем запись для текущего студента
-      for (var i = 0; i < data.length; i++) {
-        if (data[i]['id'] == updatedStudent.id) {
-          data[i]['selectedModules'] = updatedStudent.selectedModules;
-        }
-      }
+      setState(() {
+        confirmed = true;
+      });
 
-      // Перезаписываем JSON (только для десктопа / веба через File)
-      final file = File('assets/data/students.json');
-      await file.writeAsString(const JsonEncoder.withIndent('  ').convert(data));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Your selection has been saved."),
+          duration: Duration(seconds: 2),
+        ),
+      );
     } catch (e) {
-      debugPrint("Fehler beim Speichern der Datei: $e");
+      debugPrint("Error saving: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Error saving."),
+          duration: Duration(seconds: 2),
+        ),
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (currentStudent == null || semestersMap == null) {
+    if (loading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (semestersMap == null) {
+      return const Scaffold(
+        body: Center(child: Text('No data found')),
       );
     }
 
@@ -169,16 +173,13 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                       ),
                       textStyle: AppTextStyles.body,
                     ),
-                    onPressed: () {
+                    onPressed: () async {
                       setState(() {
                         selectedWPM = wpm;
-                        final sel =
-                            currentStudent?.selectedModules["wpm$selectedWPM"];
-                        selectedModules = (sel != null)
-                            ? Set<String>.from(List<String>.from(sel))
-                            : <String>{};
                         confirmed = false;
+                        loading = true;
                       });
+                      await _loadStudentData();
                     },
                     child: Text("WPM $wpm"),
                   ),
@@ -207,15 +208,13 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                   semestersMap!['wpm$selectedWPM']?['chooseOpenDate'] ?? '',
               chooseCloseDate:
                   semestersMap!['wpm$selectedWPM']?['chooseCloseDate'] ?? '',
-              onCompleted: () => print("Als erledigt gekennzeichnet!"),
+              onCompleted: () => print("Marked as completed!"),
             ),
             const SizedBox(height: 20),
 
             SectionConfirm(
-              studentId: currentStudent!.id,
-              onConfirm: () {
-                Navigator.pushNamed(context, '/confirmation');
-              },
+              studentId: widget.studentId,
+              onConfirm: () => _confirmSelection(),
             ),
             const SizedBox(height: 20),
 
@@ -241,7 +240,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                   ),
                   elevation: 3,
                 ),
-                child: const Text("Wahl bestätigen"),
+                child: const Text("Confirm selection"),
               ),
           ],
         ),
