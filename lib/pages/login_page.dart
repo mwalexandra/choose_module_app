@@ -5,96 +5,120 @@ class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
 
   @override
-  _LoginPageState createState() => _LoginPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  late TextEditingController _userIDController;
-  late TextEditingController _passwordController;
+  final _idController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _database = FirebaseDatabase.instance.ref("students");
+  String? _errorMessage;
+  bool _loading = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _userIDController = TextEditingController();
-    _passwordController = TextEditingController();
-  }
+  Future<void> _login() async {
+    setState(() {
+      _errorMessage = null;
+      _loading = true;
+    });
 
-  @override
-  void dispose() {
-    _userIDController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submitLogin() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    final userID = _userIDController.text.trim();
+    final id = _idController.text.trim();
     final password = _passwordController.text.trim();
 
-    // ignore: deprecated_member_use
-    final databaseReference = FirebaseDatabase.instance.ref();
-    final snapshot = await databaseReference.child('students').child(userID).once();
+    if (id.isEmpty || password.isEmpty) {
+      setState(() {
+        _errorMessage = "Bitte ID und Passwort eingeben";
+        _loading = false;
+      });
+      return;
+    }
 
-    if (snapshot.snapshot.value != null) {
-      final studentData = Map<String, dynamic>.from(snapshot.snapshot.value as Map);
-      final studentPassword = studentData['password'];
+    try {
+      // читаем запись студента по ID
+      final snapshot = await _database.child(id).get();
 
-      if (studentPassword == password) {
-        // Навигация на страницу модулей с передачей studentId
-        Navigator.pushReplacementNamed(
-          context,
-          '/modules',
-          arguments: {
-            'studentId': userID,
-            'name': studentData['name'],
-            'surname': studentData['surname'],
-            'specialty': studentData['specialty'],
-          },
-        );
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text("Incorrect password")),
-        );
+      if (!snapshot.exists) {
+        setState(() {
+          _errorMessage = "Student nicht gefunden";
+          _loading = false;
+        });
+        return;
       }
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Student not found")),
+
+      final data = Map<String, dynamic>.from(snapshot.value as Map);
+
+      if (data['password'] != password) {
+        setState(() {
+          _errorMessage = "Falsches Passwort";
+          _loading = false;
+        });
+        return;
+      }
+
+      // вход успешен
+      Navigator.pushNamed(
+        context,
+        '/modules',
+        arguments: {
+          'studentId': id,
+          'name': data['name'] ?? '',
+          'surname': data['surname'] ?? '',
+          'specialty': data['specialty'] ?? '',
+        },
       );
+    } catch (e) {
+      setState(() {
+        _errorMessage = "Fehler beim Zugriff auf die Datenbank";
+      });
+    } finally {
+      setState(() {
+        _loading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Login")),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
+      appBar: AppBar(title: const Text('Student Login')),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              TextFormField(
-                controller: _userIDController,
-                decoration: const InputDecoration(labelText: "Student ID"),
-                textInputAction: TextInputAction.next,
-                validator: (value) =>
-                    value == null || value.isEmpty ? "Enter Student ID" : null,
-              ),
-              TextFormField(
-                controller: _passwordController,
-                decoration: const InputDecoration(labelText: "Password"),
-                obscureText: true,
-                textInputAction: TextInputAction.done,
-                onFieldSubmitted: (_) => _submitLogin(),
-                validator: (value) =>
-                    value == null || value.isEmpty ? "Enter Password" : null,
+              const Text(
+                'Bitte Student-ID und Passwort eingeben',
+                style: TextStyle(fontSize: 18),
               ),
               const SizedBox(height: 20),
+              TextField(
+                controller: _idController,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Student ID',
+                ),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: _passwordController,
+                obscureText: true,
+                decoration: const InputDecoration(
+                  border: OutlineInputBorder(),
+                  labelText: 'Passwort',
+                ),
+              ),
+              const SizedBox(height: 20),
+              if (_errorMessage != null)
+                Text(
+                  _errorMessage!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _submitLogin,
-                child: const Text("Login"),
+                onPressed: _loading ? null : _login,
+                child: _loading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : const Text('Anmelden'),
               ),
             ],
           ),
