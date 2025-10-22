@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_database/firebase_database.dart';
-import '../constants/app_styles.dart';
+import '../../constants/app_styles.dart';
 
 class ModuleSelectionPage extends StatefulWidget {
   final String studentId;
