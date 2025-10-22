@@ -34,7 +34,7 @@ class _LoginPageState extends State<LoginPage> {
     final password = _passwordController.text.trim();
 
     // ignore: deprecated_member_use
-    final databaseReference = FirebaseDatabase.instance.reference();
+    final databaseReference = FirebaseDatabase.instance.ref();
     final snapshot = await databaseReference.child('students').child(userID).once();
 
     if (snapshot.snapshot.value != null) {
