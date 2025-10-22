@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_database/firebase_database.dart';
 import 'pages/login_page.dart';
-import 'pages/module_selection_page.dart';
+import 'pages/module_selection/module_selection_page.dart';
 // import 'pages/confirmation_page.dart';
 
 // Конфигурация Firebase

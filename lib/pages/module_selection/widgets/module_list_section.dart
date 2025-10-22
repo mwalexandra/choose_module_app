@@ -35,7 +35,7 @@ class SectionConfirm extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             "Bitte bestätigen Sie Ihre Modulwahl.",
-            style: AppTextStyles.body.copyWith(fontSize: 14, color: AppColors.textSecondary),
+            style: AppTextStyles.body,
           ),
           const SizedBox(height: 12),
           ElevatedButton(
@@ -44,7 +44,7 @@ class SectionConfirm extends StatelessWidget {
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
-              textStyle: AppTextStyles.button.copyWith(fontSize: 16),
+              textStyle: AppTextStyles.button,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
