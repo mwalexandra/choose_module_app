@@ -9,7 +9,8 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends State<LoginPage>
+    with SingleTickerProviderStateMixin {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _loading = false;
@@ -28,9 +29,9 @@ class _LoginPageState extends State<LoginPage> {
     if (!snapshot.exists) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Student not found'),
-          backgroundColor: AppColors.secondary,
+        SnackBar(
+          content: const Text('Student not found'),
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -41,9 +42,9 @@ class _LoginPageState extends State<LoginPage> {
     if (data['password'] != password) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Incorrect password'),
-          backgroundColor: AppColors.secondary,
+        SnackBar(
+          content: const Text('Incorrect password'),
+          backgroundColor: AppColors.error,
         ),
       );
       return;
@@ -64,10 +65,17 @@ class _LoginPageState extends State<LoginPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
 
+    final backgroundColor =
+        isDark ? AppColors.darkBackgroundMain : AppColors.backgroundMain;
+    final cardColor = isDark ? AppColors.darkCard : AppColors.card;
+    final textColor =
+        isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundMain,
+      backgroundColor: backgroundColor,
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
@@ -78,11 +86,11 @@ class _LoginPageState extends State<LoginPage> {
             child: Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: AppColors.card,
+                color: cardColor,
                 borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withOpacity(0.1),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -91,32 +99,41 @@ class _LoginPageState extends State<LoginPage> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Student Login', style: AppTextStyles.heading),
+                  Text('Student Login',
+                      style: AppTextStyles.heading(isDark: isDark)),
                   const SizedBox(height: 20),
                   TextField(
                     controller: _idController,
-                    style: AppTextStyles.body,
+                    style: AppTextStyles.body(isDark: isDark),
                     decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.person, color: textColor),
                       labelText: 'ID',
+                      labelStyle: TextStyle(color: textColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      fillColor: AppColors.backgroundMain,
+                      fillColor: isDark
+                          ? AppColors.darkBackgroundSubtle
+                          : AppColors.backgroundSubtle,
                     ),
                   ),
                   const SizedBox(height: 16),
                   TextField(
                     controller: _passwordController,
                     obscureText: true,
-                    style: AppTextStyles.body,
+                    style: AppTextStyles.body(isDark: isDark),
                     decoration: InputDecoration(
+                      prefixIcon: Icon(Icons.lock, color: textColor),
                       labelText: 'Password',
+                      labelStyle: TextStyle(color: textColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                       filled: true,
-                      fillColor: AppColors.backgroundMain,
+                      fillColor: isDark
+                          ? AppColors.darkBackgroundSubtle
+                          : AppColors.backgroundSubtle,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -131,11 +148,19 @@ class _LoginPageState extends State<LoginPage> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                       ),
-                      child: _loading
-                          ? const CircularProgressIndicator(
-                              color: Colors.white,
-                            )
-                          : const Text('Login', style: AppTextStyles.button),
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 250),
+                        child: _loading
+                            ? const SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 3,
+                                ),
+                              )
+                            : Text('Login', style: AppTextStyles.button()),
+                      ),
                     ),
                   ),
                 ],
