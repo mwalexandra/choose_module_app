@@ -1,23 +1,19 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_database/firebase_database.dart';
 import '../../constants/app_colors.dart';
+import '../../models/student.dart';
+import '../../services/modules_service.dart';
+import '../../services/students_service.dart';
 import 'widgets/student_header.dart';
 import 'widgets/module_info_section.dart';
 import 'widgets/selected_modules_section.dart';
 import 'widgets/module_list_section.dart';
 
 class ModuleSelectionPage extends StatefulWidget {
-  final String studentId;
-  final String name;
-  final String surname;
-  final String kurs;
+  final Student student;
 
   const ModuleSelectionPage({
     super.key,
-    required this.studentId,
-    required this.name,
-    required this.surname,
-    required this.kurs,
+    required this.student,
   });
 
   @override
@@ -25,8 +21,10 @@ class ModuleSelectionPage extends StatefulWidget {
 }
 
 class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
+  final ModulesService _modulesService = ModulesService();
+  final StudentsService _studentsService = StudentsService();
+
   int selectedWpm = 1;
-  Map<String, dynamic> semestersData = {};
   bool loading = true;
   bool hasChanges = false;
 
@@ -47,68 +45,53 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
     });
   }
 
-  /// Загружает все модули курса студента
   Future<void> _loadModules() async {
     setState(() => loading = true);
 
     try {
-      final kurs = widget.kurs;
-      final semestersRef = FirebaseDatabase.instance.ref('modules/$kurs/semesters');
-      final studentModulesRef = FirebaseDatabase.instance
-          .ref('students/${widget.studentId}/selectedModules');
+      final kurs = widget.student.kurs;
+      final semesters = await _modulesService.getSemesters(kurs);
+      final wpmKey = 'wpm$selectedWpm';
 
-      // Получаем все семестры курса
-      final semestersSnapshot = await semestersRef.get();
-      Map<String, dynamic> semestersMap = {};
-      if (semestersSnapshot.exists && semestersSnapshot.value != null) {
-        semestersMap = Map<String, dynamic>.from(semestersSnapshot.value as Map);
-      }
+      // Находим семестр с нужным WPM
+      final semesterList = semesters.where((s) => s.id == wpmKey).toList();
+      final semester = semesterList.isNotEmpty ? semesterList.first : null;
 
-      // Получаем выбранные модули студента
-      final studentModulesSnapshot = await studentModulesRef.get();
-      Map<String, dynamic> studentModulesMap = {};
-      if (studentModulesSnapshot.exists && studentModulesSnapshot.value != null) {
-        studentModulesMap = Map<String, dynamic>.from(studentModulesSnapshot.value as Map);
-      }
+      final modules = semester?.modules ?? [];
+
+      final studentModules = widget.student.selectedModules[wpmKey]?.where((id) => id.isNotEmpty).toList() ?? [];
 
       setState(() {
-        semestersData = semestersMap;
+        availableModules = modules.map((m) => m.toJson()).toList();
+        selectedModuleIds = studentModules;
+        selectedModulesData = modules
+            .where((m) => selectedModuleIds.contains(m.id))
+            .map((m) => m.toJson())
+            .toList();
+        hasChanges = false;
       });
-
-      // После загрузки данных фильтруем модули по WPM и отмечаем выбранные
-      _filterModulesByWpm(studentModulesMap);
     } catch (e) {
       debugPrint('Ошибка при загрузке модулей: $e');
       setState(() {
-        semestersData = {};
         availableModules = [];
         selectedModuleIds = [];
         selectedModulesData = [];
+        hasChanges = false;
       });
     }
 
     setState(() => loading = false);
   }
 
-  /// Фильтрует модули по выбранному WPM и отмечает уже выбранные
-  void _filterModulesByWpm([Map<String, dynamic>? studentModulesMap]) {
+  void _filterModulesByWpm() {
     final wpmKey = 'wpm$selectedWpm';
-    final modulesList = (semestersData[wpmKey]?['modules'] as List?)
-            ?.map((m) => Map<String, dynamic>.from(m as Map))
-            .toList() ??
-        [];
 
-    // Подгружаем уже выбранные модули студента, если есть
-    final alreadySelected = List<String>.from(
-        studentModulesMap?[wpmKey] ?? []
-    );
+    final modules = availableModules;
+    final alreadySelected = widget.student.selectedModules[wpmKey]?.where((id) => id.isNotEmpty).toList() ?? [];
 
     setState(() {
-      availableModules = modulesList;
       selectedModuleIds = alreadySelected;
-      selectedModulesData = availableModules
-          .where((module) => selectedModuleIds.contains(module['id'].toString()))
-          .toList();
+      selectedModulesData = modules.where((m) => selectedModuleIds.contains(m['id'])).toList();
       hasChanges = false;
     });
   }
@@ -121,18 +104,14 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
       } else {
         selectedModuleIds.remove(moduleId);
       }
-      selectedModulesData = availableModules
-          .where((module) => selectedModuleIds.contains(module['id'].toString()))
-          .toList();
+      selectedModulesData = availableModules.where((m) => selectedModuleIds.contains(m['id'])).toList();
     });
   }
 
   Future<void> _confirmSelection() async {
-    final studentId = widget.studentId;
-    final ref = FirebaseDatabase.instance
-        .ref('students/$studentId/selectedModules/wpm$selectedWpm');
-
-    await ref.set(selectedModuleIds);
+    final wpmKey = 'wpm$selectedWpm';
+    widget.student.selectedModules[wpmKey] = selectedModuleIds;
+    await _studentsService.updateStudent(widget.student);
 
     setState(() {
       hasChanges = false;
@@ -161,9 +140,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     StudentHeader(
-                      name: widget.name,
-                      surname: widget.surname,
-                      kurs: widget.kurs,
+                      student: widget.student,
                       selectedWpm: selectedWpm,
                       onSelectWpm: _selectWpm,
                     ),

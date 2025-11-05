@@ -1,62 +1,46 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_colors.dart';
-import '../../../services/students_service.dart';
+import '../../../models/student.dart';
 
-class StudentHeader extends StatefulWidget {
+class StudentHeader extends StatelessWidget {
+  final Student student;
   final int selectedWpm;
   final Function(int) onSelectWpm;
 
   const StudentHeader({
     super.key,
+    required this.student,
     required this.selectedWpm,
     required this.onSelectWpm,
   });
 
-  @override
-  State<StudentHeader> createState() => _StudentHeaderState();
-}
-
-class _StudentHeaderState extends State<StudentHeader> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? AppColors.darkCard : AppColors.card;
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
 
-    final student = StudentsService().currentStudent;
-
-    final name = student != null ? student.name : 'Student';
-    final surname = student != null ? student.surname : '';
-    final kurs = student != null ? student.kurs : '';
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          bool isMobile = constraints.maxWidth < 400;
-
+          final isMobile = constraints.maxWidth < 400;
           final info = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('$name $surname',
-                  style: AppTextStyles.heading(isDark: isDark)
-                      .copyWith(color: textColor)),
+              Text('${student.name} ${student.surname}',
+                  style: AppTextStyles.heading(isDark: isDark).copyWith(color: textColor)),
               const SizedBox(height: 4),
-              Text(kurs,
-                  style: AppTextStyles.subheading(isDark: isDark)
-                      .copyWith(color: textColor)),
+              Text(student.kurs, style: AppTextStyles.subheading(isDark: isDark).copyWith(color: textColor)),
               const SizedBox(height: 8),
-              Text('Selected WPM: ${widget.selectedWpm}',
-                  style: AppTextStyles.body(isDark: isDark)
-                      .copyWith(color: textColor)),
+              Text('Selected WPM: $selectedWpm',
+                  style: AppTextStyles.body(isDark: isDark).copyWith(color: textColor)),
             ],
           );
 
@@ -64,18 +48,15 @@ class _StudentHeaderState extends State<StudentHeader> {
             mainAxisSize: MainAxisSize.min,
             children: List.generate(3, (i) {
               final wpm = i + 1;
-              final isSelected = widget.selectedWpm == wpm;
+              final isSelected = selectedWpm == wpm;
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4),
                 child: ElevatedButton(
-                  onPressed: () => widget.onSelectWpm(wpm),
+                  onPressed: () => onSelectWpm(wpm),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        isSelected ? AppColors.primary : AppColors.backgroundSubtle,
-                    foregroundColor:
-                        isSelected ? Colors.white : AppColors.textPrimary,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12)),
+                    backgroundColor: isSelected ? AppColors.primary : AppColors.backgroundSubtle,
+                    foregroundColor: isSelected ? Colors.white : AppColors.textPrimary,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   child: Text('WPM $wpm'),
                 ),
@@ -84,13 +65,8 @@ class _StudentHeaderState extends State<StudentHeader> {
           );
 
           return isMobile
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [info, const SizedBox(height: 16), buttons])
-              : Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [info, buttons],
-                );
+              ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [info, const SizedBox(height: 16), buttons])
+              : Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [info, buttons]);
         },
       ),
     );
