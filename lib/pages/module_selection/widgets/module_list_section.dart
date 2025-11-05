@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_colors.dart';
 import '../../../constants/app_styles.dart';
+import '../../../models/module.dart';
 
 class ModuleListSection extends StatelessWidget {
-  final List<Map<String, dynamic>> availableModules;
+  final List<Module> availableModules;
   final List<String> selectedModuleIds;
   final Function(String moduleId, bool isSelected) onToggleSelection;
 
@@ -27,7 +28,7 @@ class ModuleListSection extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         ...availableModules.map((module) {
-          final moduleId = module['id']?.toString() ?? '';
+          final moduleId = module.id;
           final isSelected = selectedModuleIds.contains(moduleId);
 
           return Container(
@@ -59,7 +60,7 @@ class ModuleListSection extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      module['name'] ?? '—',
+                      module.name,
                       style: AppTextStyles.body(isDark: isDark),
                     ),
                   ),
@@ -68,7 +69,7 @@ class ModuleListSection extends StatelessWidget {
               subtitle: Padding(
                 padding: const EdgeInsets.only(left: 52),
                 child: Text(
-                  'Участников: ${module['participants'] ?? 0}',
+                  'Участников: ${module.participants ?? 0}',
                   style: AppTextStyles.body(isDark: isDark),
                 ),
               ),
@@ -81,12 +82,14 @@ class ModuleListSection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        module['description'] ?? 'Нет описания',
+                        module.description?.isNotEmpty == true
+                            ? module.description!
+                            : 'Нет описания',
                         style: AppTextStyles.body(isDark: isDark),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Доцент: ${module['dozent'] ?? '—'}',
+                        'Доцент: ${module.dozent ?? '—'}',
                         style: AppTextStyles.body(isDark: isDark),
                       ),
                     ],

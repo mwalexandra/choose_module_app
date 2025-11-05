@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../constants/app_styles.dart';
 import '../../../constants/app_colors.dart';
+import '../../../models/module.dart';
 
 class SelectedModulesSection extends StatelessWidget {
-  final List<Map<String, dynamic>> selectedModules;
+  final List<Module> selectedModules;
   final bool hasChanges;
   final VoidCallback onConfirmSelection;
 
@@ -49,13 +50,15 @@ class SelectedModulesSection extends StatelessWidget {
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     title: Text(
-                      module['name'] ?? '',
+                      module.name,
                       style: AppTextStyles.body(isDark: isDark),
                     ),
-                    subtitle: Text(
-                      module['lecturer'] ?? '',
-                      style: AppTextStyles.body(isDark: isDark),
-                    ),
+                    subtitle: module.dozent != null
+                        ? Text(
+                            module.dozent!,
+                            style: AppTextStyles.body(isDark: isDark),
+                          )
+                        : null,
                   );
                 }).toList(),
               ),
@@ -67,7 +70,7 @@ class SelectedModulesSection extends StatelessWidget {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: hasChanges
                       ? AppColors.primary
-                      : AppColors.primary.withValues(alpha: 50),
+                      : AppColors.primary.withOpacity(0.3),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10),
