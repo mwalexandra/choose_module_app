@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_database/firebase_database.dart';
 import '../constants/app_styles.dart';
 import '../constants/app_colors.dart';
+import '../models/student.dart';
+import '../services/students_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -24,44 +25,54 @@ class _LoginPageState extends State<LoginPage>
 
     setState(() => _loading = true);
 
-    final snapshot =
-        await FirebaseDatabase.instance.ref('students/$studentId').get();
+    try {
+      // !!! Создаём экземпляр сервиса (статичный сервис)
+      final studentService = StudentsService();
 
-    if (!snapshot.exists) {
+      // Получаем студента по ID
+      final Student? student = await studentService.getStudentById(studentId);
+
+      if (student == null) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Student not found'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      if (student.password != password) {
+        setState(() => _loading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Incorrect password'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+        return;
+      }
+
+      // Сохраняем студента как текущий в сервисе (сессия)
+      studentService.currentStudent = student;
+
+      setState(() => _loading = false);
+
+      Navigator.pushReplacementNamed(
+        context,
+        '/modules',
+        arguments: student, // передаем объект студента
+      );
+    } catch (e) {
       setState(() => _loading = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Student not found'),
+          content: Text('Error: $e'),
           backgroundColor: AppColors.error,
         ),
       );
-      return;
     }
-
-    final data = Map<String, dynamic>.from(snapshot.value as Map);
-
-    if (data['password'] != password) {
-      setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Incorrect password'),
-          backgroundColor: AppColors.error,
-        ),
-      );
-      return;
-    }
-
-    setState(() => _loading = false);
-    Navigator.pushReplacementNamed(
-      context,
-      '/modules',
-      arguments: {
-        'studentId': studentId,
-        'name': data['name'] ?? '',
-        'surname': data['surname'] ?? '',
-        'specialty': data['specialty'] ?? '',
-      },
-    );
   }
 
   @override
