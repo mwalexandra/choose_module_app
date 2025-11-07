@@ -9,7 +9,7 @@ class StudentModulesService {
 
   /// Получает все выбранные модули студента как объекты Module
   Future<List<Module>> getSelectedModules(Student student) async {
-    List<Module> selected = [];
+    final selected = <Module>[];
 
     for (final entry in student.selectedModules.entries) {
       final semesterId = entry.key; // "wpm1", "wpm2"...
@@ -21,9 +21,15 @@ class StudentModulesService {
         if (moduleId.isNotEmpty) {
           final module = modulesInSemester.firstWhere(
             (m) => m.id == moduleId,
-            orElse: () => Module(id: '', name: '', description: '', dozent: '', participants: 0),
+            orElse: () => Module(
+              id: '',
+              name: '',
+              description: '',
+              dozent: '',
+              participants: 0,
+            ),
           );
-          if (module.id.isNotEmpty) selected.add(module);
+          if (module != null) selected.add(module);
         }
       }
     }
@@ -33,20 +39,17 @@ class StudentModulesService {
 
   /// Добавляет модуль в выбранные модули студента
   Future<void> addModule(Student student, String semesterId, Module module) async {
-    final moduleIds = student.selectedModules[semesterId] ?? ["", ""];
+    final moduleIds = student.selectedModules[semesterId] ?? [];
 
-    // Находим первый пустой слот
-    for (int i = 0; i < moduleIds.length; i++) {
-      if (moduleIds[i].isEmpty) {
-        moduleIds[i] = module.id;
-        break;
-      }
+    // Находим первый пустой слот или добавляем в конец
+    if (!moduleIds.contains(module.id)) {
+      moduleIds.add(module.id);
     }
 
     student.selectedModules[semesterId] = moduleIds;
     await _studentsService.updateStudent(student);
 
-    // Можно также увеличить счетчик участников
+    // Увеличиваем счетчик участников
     final currentModule = await _modulesService.getModuleById(student.kurs, semesterId, module.id);
     if (currentModule != null) {
       await _modulesService.updateParticipants(
@@ -62,25 +65,21 @@ class StudentModulesService {
   Future<void> removeModule(Student student, String semesterId, Module module) async {
     final moduleIds = student.selectedModules[semesterId] ?? [];
 
-    for (int i = 0; i < moduleIds.length; i++) {
-      if (moduleIds[i] == module.id) {
-        moduleIds[i] = "";
-        break;
+    if (moduleIds.contains(module.id)) {
+      moduleIds.remove(module.id);
+      student.selectedModules[semesterId] = moduleIds;
+      await _studentsService.updateStudent(student);
+
+      // Уменьшаем счетчик участников
+      final currentModule = await _modulesService.getModuleById(student.kurs, semesterId, module.id);
+      if (currentModule != null && currentModule.participants > 0) {
+        await _modulesService.updateParticipants(
+          student.kurs,
+          semesterId,
+          module.id,
+          currentModule.participants - 1,
+        );
       }
-    }
-
-    student.selectedModules[semesterId] = moduleIds;
-    await _studentsService.updateStudent(student);
-
-    // Можно также уменьшить счетчик участников
-    final currentModule = await _modulesService.getModuleById(student.kurs, semesterId, module.id);
-    if (currentModule != null && currentModule.participants > 0) {
-      await _modulesService.updateParticipants(
-        student.kurs,
-        semesterId,
-        module.id,
-        currentModule.participants - 1,
-      );
     }
   }
 }
