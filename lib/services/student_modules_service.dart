@@ -30,7 +30,7 @@ class StudentModulesService {
         continue;
       }
 
-      final course = await _modulesService.getCourseModules(student.kurs);
+      final course = await _modulesService.getCourse(student.kurs);
       if (course == null) {
         print('❌ Не удалось загрузить курс "${student.kurs}" для студента ${student.id}');
         continue;
@@ -100,7 +100,7 @@ class StudentModulesService {
     await _studentsService.updateStudent(student);
 
     // Увеличиваем счётчик участников
-    final course = await _modulesService.getCourseModules(student.kurs);
+    final course = await _modulesService.getCourse(student.kurs);
     if (course == null) {
       print('❌ Ошибка: курс "${student.kurs}" не найден при добавлении модуля.');
       return;
@@ -157,7 +157,7 @@ class StudentModulesService {
     await _studentsService.updateStudent(student);
 
     // Уменьшаем счётчик участников
-    final course = await _modulesService.getCourseModules(student.kurs);
+    final course = await _modulesService.getCourse(student.kurs);
     if (course == null) {
       print('❌ Ошибка: курс "${student.kurs}" не найден при удалении модуля.');
       return;
