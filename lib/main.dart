@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_database/firebase_database.dart';
 import 'pages/login_page.dart';
 import 'pages/module_selection/module_selection_page.dart';
-// import 'pages/confirmation_page.dart';
+import 'models/student.dart';
 
-// Конфигурация Firebase
+/// Конфигурация Firebase
 const FirebaseOptions firebaseOptions = FirebaseOptions(
   apiKey: "AIzaSyDLj-MYa-lmMCwitrbSFzqunsG89DsMnb8",
   authDomain: "choose-module-app.firebaseapp.com",
@@ -29,11 +28,11 @@ class ModuleChooseApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      title: 'Module Selection',
       debugShowCheckedModeBanner: false,
-      title: 'Module Choose Page',
       theme: ThemeData(
-        primarySwatch: Colors.green,
-        visualDensity: VisualDensity.adaptivePlatformDensity,
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
+        useMaterial3: true,
       ),
       initialRoute: '/login',
       onGenerateRoute: (settings) {
@@ -43,29 +42,23 @@ class ModuleChooseApp extends StatelessWidget {
 
           case '/modules':
             final args = settings.arguments as Map<String, dynamic>?;
-            final studentId = args?['studentId'];
-            final name = args?['name'] ?? '';
-            final surname = args?['surname'] ?? '';
-            final kurs = args?['kurs'] ?? '';
 
-            if (studentId == null) {
+            // Проверяем аргументы
+            if (args == null || args['student'] == null) {
               return MaterialPageRoute(
                 builder: (_) => const Scaffold(
-                  body: Center(child: Text('Error: studentId is required')),
+                  body: Center(child: Text('Ошибка: отсутствуют данные студента')),
                 ),
               );
             }
+
+            final student = args['student'] as Student;
+
             return MaterialPageRoute(
               builder: (_) => ModuleSelectionPage(
-                studentId: studentId,
-                name: name,
-                surname: surname,
-                kurs: kurs,
+                student: student,
               ),
             );
-
-          // case '/confirmation':
-          //   return MaterialPageRoute(builder: (_) => ConfirmationPage());
 
           default:
             return MaterialPageRoute(builder: (_) => const LoginPage());

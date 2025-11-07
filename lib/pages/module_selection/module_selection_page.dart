@@ -1,6 +1,10 @@
+// lib/screens/module_selection/module_selection_page.dart
+
 import 'package:flutter/material.dart';
 import '../../constants/app_colors.dart';
 import '../../models/student.dart';
+import '../../models/module.dart';
+import '../../models/semester.dart';
 import '../../services/modules_service.dart';
 import '../../services/students_service.dart';
 import 'widgets/student_header.dart';
@@ -24,102 +28,98 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   final ModulesService _modulesService = ModulesService();
   final StudentsService _studentsService = StudentsService();
 
-  int selectedWpm = 1;
+  int selectedWpm = 1; // ui показывает 1..3, мы преобразуем в "wpm1"
   bool loading = true;
   bool hasChanges = false;
 
-  List<Map<String, dynamic>> availableModules = [];
-  List<String> selectedModuleIds = [];
-  List<Map<String, dynamic>> selectedModulesData = [];
+  List<Module> availableModules = [];      // модули текущего семестра
+  List<String> selectedModuleIds = [];     // id выбранных модулей
+  List<Module> selectedModulesData = [];   // объекты выбранных модулей
 
   @override
   void initState() {
     super.initState();
-    _loadModules();
+    _loadModulesForCurrentWpm();
   }
 
-  void _selectWpm(int wpm) {
-    setState(() {
-      selectedWpm = wpm;
-      _filterModulesByWpm();
-    });
-  }
+  String get _wpmKey => 'wpm$selectedWpm';
 
-  Future<void> _loadModules() async {
+  Future<void> _loadModulesForCurrentWpm() async {
     setState(() => loading = true);
-
     try {
       final kurs = widget.student.kurs;
-      final semesters = await _modulesService.getSemesters(kurs);
-      final wpmKey = 'wpm$selectedWpm';
 
-      // Находим семестр с нужным WPM
-      final semesterList = semesters.where((s) => s.id == wpmKey).toList();
-      final semester = semesterList.isNotEmpty ? semesterList.first : null;
+      // Получаем конкретный Semester через сервис (существующий метод)
+      final Semester? semester = await _modulesService.getSemester(kurs, _wpmKey);
 
-      final modules = semester?.modules ?? [];
+      final List<Module> modules = semester?.modules ?? [];
 
-      final studentModules = widget.student.selectedModules[wpmKey]?.where((id) => id.isNotEmpty).toList() ?? [];
+      // Загружаем уже выбранные id (в student.selectedModules хранится Map<String, List<String>>)
+      final List<String> alreadySelected = (widget.student.selectedModules[_wpmKey] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .where((s) => s.isNotEmpty)
+              .toList() ??
+          [];
 
       setState(() {
-        availableModules = modules.map((m) => m.toJson()).toList();
-        selectedModuleIds = studentModules;
-        selectedModulesData = modules
-            .where((m) => selectedModuleIds.contains(m.id))
-            .map((m) => m.toJson())
-            .toList();
+        availableModules = modules;
+        selectedModuleIds = List<String>.from(alreadySelected);
+        selectedModulesData =
+            availableModules.where((m) => selectedModuleIds.contains(m.id)).toList();
         hasChanges = false;
       });
-    } catch (e) {
-      debugPrint('Ошибка при загрузке модулей: $e');
+    } catch (e, st) {
+      debugPrint('Error loading modules: $e\n$st');
       setState(() {
         availableModules = [];
         selectedModuleIds = [];
         selectedModulesData = [];
         hasChanges = false;
       });
+    } finally {
+      setState(() => loading = false);
     }
-
-    setState(() => loading = false);
   }
 
-  void _filterModulesByWpm() {
-    final wpmKey = 'wpm$selectedWpm';
-
-    final modules = availableModules;
-    final alreadySelected = widget.student.selectedModules[wpmKey]?.where((id) => id.isNotEmpty).toList() ?? [];
-
+  void _onSelectWpm(int wpm) {
+    if (wpm == selectedWpm) return;
     setState(() {
-      selectedModuleIds = alreadySelected;
-      selectedModulesData = modules.where((m) => selectedModuleIds.contains(m['id'])).toList();
-      hasChanges = false;
+      selectedWpm = wpm;
     });
+    _loadModulesForCurrentWpm();
   }
 
-  void _toggleModuleSelection(String moduleId, bool isSelected) {
+  void _onToggleSelection(String moduleId, bool isSelected) {
     setState(() {
       hasChanges = true;
       if (isSelected) {
-        selectedModuleIds.add(moduleId);
+        if (!selectedModuleIds.contains(moduleId)) selectedModuleIds.add(moduleId);
       } else {
         selectedModuleIds.remove(moduleId);
       }
-      selectedModulesData = availableModules.where((m) => selectedModuleIds.contains(m['id'])).toList();
+      selectedModulesData =
+          availableModules.where((m) => selectedModuleIds.contains(m.id)).toList();
     });
   }
 
-  Future<void> _confirmSelection() async {
-    final wpmKey = 'wpm$selectedWpm';
+  Future<void> _onConfirmSelection() async {
+    final wpmKey = _wpmKey;
+    // Обновляем локальный объект студента
     widget.student.selectedModules[wpmKey] = selectedModuleIds;
-    await _studentsService.updateStudent(widget.student);
 
-    setState(() {
-      hasChanges = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Выбор успешно сохранён')),
-    );
+    // Сохраняем в базу через сервис
+    try {
+      await _studentsService.updateStudent(widget.student);
+      setState(() => hasChanges = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Выбор успешно сохранён')),
+      );
+    } catch (e) {
+      debugPrint('Error saving student selection: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Ошибка при сохранении: $e')),
+      );
+    }
   }
 
   @override
@@ -135,28 +135,38 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
           : SingleChildScrollView(
               padding: const EdgeInsets.all(24),
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: screenWidth > 600 ? 600 : screenWidth),
+                constraints: BoxConstraints(maxWidth: screenWidth > 800 ? 800 : screenWidth),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Header принимает весь объект Student
                     StudentHeader(
                       student: widget.student,
                       selectedWpm: selectedWpm,
-                      onSelectWpm: _selectWpm,
+                      onSelectWpm: _onSelectWpm,
                     ),
                     const SizedBox(height: 24),
-                    ModuleInfoSection(selectedWpm: selectedWpm),
+
+                    // Информация о семестре (даты + список модулей кратко)
+                    ModuleInfoSection(
+                      kurs: widget.student.kurs,
+                      selectedWpm: _wpmKey,
+                    ),
                     const SizedBox(height: 24),
+
+                    // Выбранные модули (объекты Module)
                     SelectedModulesSection(
                       selectedModules: selectedModulesData,
                       hasChanges: hasChanges,
-                      onConfirmSelection: _confirmSelection,
+                      onConfirmSelection: _onConfirmSelection,
                     ),
                     const SizedBox(height: 24),
+
+                    // Список модулей с чекбоксами
                     ModuleListSection(
                       availableModules: availableModules,
                       selectedModuleIds: selectedModuleIds,
-                      onToggleSelection: _toggleModuleSelection,
+                      onToggleSelection: _onToggleSelection,
                     ),
                   ],
                 ),
