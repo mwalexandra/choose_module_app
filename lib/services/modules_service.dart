@@ -7,7 +7,7 @@ import '../services/date_helpers.dart';
 class ModulesService {
   final DatabaseReference _dbRef = FirebaseDatabase.instance.ref().child('modules');
 
-  // Helper для безопасного преобразования LinkedMap в Map<String, dynamic>
+  // Helper: безопасное преобразование LinkedMap в Map<String, dynamic>
   Map<String, dynamic> _mapFromFirebase(dynamic value) {
     if (value is Map) {
       return value.map((key, val) => MapEntry(key.toString(), _mapFromFirebase(val)));
@@ -19,8 +19,8 @@ class ModulesService {
   Future<List<String>> getAllCourses() async {
     final snapshot = await _dbRef.get();
     if (snapshot.exists) {
-      final data = snapshot.value as Map<dynamic, dynamic>;
-      return data.keys.map((k) => k.toString()).toList();
+      final data = snapshot.value as Map?;
+      return data?.keys.map((k) => k.toString()).toList() ?? [];
     }
     return [];
   }
@@ -34,7 +34,7 @@ class ModulesService {
     return CourseModules.fromJson(kurs, json);
   }
 
-  // Получение всех семестров курса как объектов Semester
+  // Получение всех семестров курса
   Future<List<Semester>> getSemesters(String kurs) async {
     final course = await getCourseModules(kurs);
     if (course == null) return [];
@@ -44,15 +44,13 @@ class ModulesService {
   // Получение конкретного семестра
   Future<Semester?> getSemester(String kurs, String semesterId) async {
     final course = await getCourseModules(kurs);
-    if (course == null) return null;
-    return course.semesters[semesterId];
+    return course?.semesters[semesterId];
   }
 
   // Получение всех модулей семестра
   Future<List<Module>> getModules(String kurs, String semesterId) async {
     final semester = await getSemester(kurs, semesterId);
-    if (semester == null) return [];
-    return semester.modules;
+    return semester?.modules ?? [];
   }
 
   // Поиск модуля по id
@@ -60,7 +58,7 @@ class ModulesService {
     final modules = await getModules(kurs, semesterId);
     try {
       return modules.firstWhere((m) => m.id == moduleId);
-    } catch (e) {
+    } catch (_) {
       return null;
     }
   }
@@ -73,23 +71,22 @@ class ModulesService {
     final semester = course.semesters[semesterId];
     if (semester == null) return;
 
-    for (var module in semester.modules) {
-      if (module.id == moduleId) {
-        final updatedModule = Module(
-          id: module.id,
-          name: module.name,
-          description: module.description,
-          dozent: module.dozent,
+    for (var i = 0; i < semester.modules.length; i++) {
+      if (semester.modules[i].id == moduleId) {
+        semester.modules[i] = Module(
+          id: semester.modules[i].id,
+          name: semester.modules[i].name,
+          description: semester.modules[i].description,
+          dozent: semester.modules[i].dozent,
           participants: count,
         );
-        final index = semester.modules.indexOf(module);
-        semester.modules[index] = updatedModule;
         break;
       }
     }
 
     // Сохраняем обратно в Firebase
-    await _dbRef.child(kurs)
+    await _dbRef
+        .child(kurs)
         .child('semesters')
         .child(semesterId)
         .child('modules')
