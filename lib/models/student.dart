@@ -19,20 +19,18 @@ class Student {
   factory Student.fromJson(String id, Map<String, dynamic> json) {
     final Map<String, List<String>> modules = {}; // <"wpm1", ["moduleId1", "moduleId2"]>
 
-    if (json['selectedModules'] != null) {
-      final sm = json['selectedModules'] as Map?;
-      sm?.forEach((key, value) {
-        final list = (value as Map?)?.values.map((e) => e.toString()).toList() ?? [];
-        modules[key.toString()] = list;
-      });
-    }
+    final sm = json['selectedModules'] as Map?;
+    sm?.forEach((key, value) {
+      final list = (value as List?)?.map((e) => e.toString()).toList() ?? [];
+      modules[key.toString()] = list;
+    });
 
     return Student(
       id: id,
-      name: json['name'] ?? '',
-      surname: json['surname'] ?? '',
-      kurs: json['kurs'] ?? '',
-      password: json['password'] ?? '',
+      name: json['name']?.toString() ?? '',
+      surname: json['surname']?.toString() ?? '',
+      kurs: json['kurs']?.toString() ?? '',
+      password: json['password']?.toString() ?? '',
       selectedModules: modules,
     );
   }
