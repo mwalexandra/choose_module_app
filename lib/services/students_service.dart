@@ -8,6 +8,14 @@ class StudentsService {
   /// Текущий авторизованный студент (сессия)
   Student? currentStudent;
 
+  // Helper для безопасного преобразования LinkedMap в Map<String, dynamic>
+  Map<String, dynamic> _mapFromFirebase(dynamic value) {
+    if (value is Map) {
+      return value.map((key, val) => MapEntry(key.toString(), _mapFromFirebase(val)));
+    }
+    return value;
+  }
+
   // Создание студента
   Future<void> createStudent(Student student) async {
     await _dbRef.child(student.id).set(student.toJson());
@@ -20,7 +28,7 @@ class StudentsService {
       final data = snapshot.value as Map<dynamic, dynamic>;
       return data.entries.map((entry) {
         final id = entry.key.toString();
-        final json = Map<String, dynamic>.from(entry.value);
+        final json = _mapFromFirebase(entry.value);
         return Student.fromJson(id, json);
       }).toList();
     }
@@ -31,7 +39,7 @@ class StudentsService {
   Future<Student?> getStudentById(String id) async {
     final snapshot = await _dbRef.child(id).get();
     if (snapshot.exists) {
-      final json = Map<String, dynamic>.from(snapshot.value as Map);
+      final json = _mapFromFirebase(snapshot.value);
       return Student.fromJson(id, json);
     }
     return null;

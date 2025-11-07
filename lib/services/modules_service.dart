@@ -7,6 +7,14 @@ import '../services/date_helpers.dart';
 class ModulesService {
   final DatabaseReference _dbRef = FirebaseDatabase.instance.ref().child('modules');
 
+  // Helper для безопасного преобразования LinkedMap в Map<String, dynamic>
+  Map<String, dynamic> _mapFromFirebase(dynamic value) {
+    if (value is Map) {
+      return value.map((key, val) => MapEntry(key.toString(), _mapFromFirebase(val)));
+    }
+    return value;
+  }
+
   // Получение всех курсов
   Future<List<String>> getAllCourses() async {
     final snapshot = await _dbRef.get();
@@ -22,7 +30,7 @@ class ModulesService {
     final snapshot = await _dbRef.child(kurs).get();
     if (!snapshot.exists) return null;
 
-    final json = Map<String, dynamic>.from(snapshot.value as Map);
+    final json = _mapFromFirebase(snapshot.value);
     return CourseModules.fromJson(kurs, json);
   }
 
@@ -81,7 +89,10 @@ class ModulesService {
     }
 
     // Сохраняем обратно в Firebase
-    await _dbRef.child(kurs).child('semesters').child(semesterId).child('modules')
+    await _dbRef.child(kurs)
+        .child('semesters')
+        .child(semesterId)
+        .child('modules')
         .set(semester.modules.map((m) => m.toJson()).toList());
   }
 }
