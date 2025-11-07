@@ -50,12 +50,18 @@ class SelectedModulesSection extends StatelessWidget {
                     dense: true,
                     contentPadding: EdgeInsets.zero,
                     title: Text(
-                      module.name,
+                      module.name.isNotEmpty ? module.name : 'Без названия',
                       style: AppTextStyles.body(isDark: isDark),
                     ),
-                    subtitle: module.dozent != null
+                    subtitle: module.dozent.isNotEmpty
                         ? Text(
-                            module.dozent!,
+                            module.dozent,
+                            style: AppTextStyles.body(isDark: isDark),
+                          )
+                        : null,
+                    trailing: module.participants >= 0
+                        ? Text(
+                            'Участников: ${module.participants}',
                             style: AppTextStyles.body(isDark: isDark),
                           )
                         : null,

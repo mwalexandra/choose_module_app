@@ -11,68 +11,64 @@ class LoginPage extends StatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage>
-    with SingleTickerProviderStateMixin {
+class _LoginPageState extends State<LoginPage> with SingleTickerProviderStateMixin {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   bool _loading = false;
 
   Future<void> _login() async {
     final studentId = _idController.text.trim();
-    final password = _passwordController.text;
+    final password = _passwordController.text.trim();
 
-    if (studentId.isEmpty || password.isEmpty) return;
+    if (studentId.isEmpty || password.isEmpty) {
+      _showSnackBar('Please fill in both fields', AppColors.error);
+      return;
+    }
 
     setState(() => _loading = true);
 
     try {
-      // !!! Создаём экземпляр сервиса (статичный сервис)
       final studentService = StudentsService();
-
-      // Получаем студента по ID
       final Student? student = await studentService.getStudentById(studentId);
 
       if (student == null) {
+        _showSnackBar('Student not found', AppColors.error);
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Student not found'),
-            backgroundColor: AppColors.error,
-          ),
-        );
         return;
       }
 
       if (student.password != password) {
+        _showSnackBar('Incorrect password', AppColors.error);
         setState(() => _loading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Incorrect password'),
-            backgroundColor: AppColors.error,
-          ),
-        );
         return;
       }
 
-      // Сохраняем студента как текущий в сервисе (сессия)
       studentService.currentStudent = student;
 
       setState(() => _loading = false);
 
+      if (!mounted) return;
+
       Navigator.pushReplacementNamed(
         context,
         '/modules',
-        arguments: student, // передаем объект студента
+        arguments: student,
       );
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('🔥 Login error: $e');
+      debugPrintStack(stackTrace: stack);
+      _showSnackBar('Error: $e', AppColors.error);
       setState(() => _loading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error: $e'),
-          backgroundColor: AppColors.error,
-        ),
-      );
     }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+      ),
+    );
   }
 
   @override
@@ -119,7 +115,7 @@ class _LoginPageState extends State<LoginPage>
                     style: AppTextStyles.body(isDark: isDark),
                     decoration: InputDecoration(
                       prefixIcon: Icon(Icons.person, color: textColor),
-                      labelText: 'ID',
+                      labelText: 'Student ID',
                       labelStyle: TextStyle(color: textColor),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
@@ -153,7 +149,7 @@ class _LoginPageState extends State<LoginPage>
                     width: double.infinity,
                     height: 50,
                     child: ElevatedButton(
-                      onPressed: _login,
+                      onPressed: _loading ? null : _login,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         shape: RoundedRectangleBorder(

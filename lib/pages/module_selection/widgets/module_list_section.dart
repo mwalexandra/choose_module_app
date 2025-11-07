@@ -60,7 +60,7 @@ class ModuleListSection extends StatelessWidget {
                   ),
                   Expanded(
                     child: Text(
-                      module.name,
+                      module.name.isNotEmpty ? module.name : 'Без названия',
                       style: AppTextStyles.body(isDark: isDark),
                     ),
                   ),
@@ -69,7 +69,7 @@ class ModuleListSection extends StatelessWidget {
               subtitle: Padding(
                 padding: const EdgeInsets.only(left: 52),
                 child: Text(
-                  'Участников: ${module.participants ?? 0}',
+                  'Участников: ${module.participants}',
                   style: AppTextStyles.body(isDark: isDark),
                 ),
               ),
@@ -82,14 +82,14 @@ class ModuleListSection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        module.description?.isNotEmpty == true
-                            ? module.description!
+                        module.description.isNotEmpty
+                            ? module.description
                             : 'Нет описания',
                         style: AppTextStyles.body(isDark: isDark),
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        'Доцент: ${module.dozent ?? '—'}',
+                        'Доцент: ${module.dozent.isNotEmpty ? module.dozent : '—'}',
                         style: AppTextStyles.body(isDark: isDark),
                       ),
                     ],

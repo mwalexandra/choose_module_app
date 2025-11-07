@@ -21,26 +21,44 @@ class StudentHeader extends StatelessWidget {
     final cardColor = isDark ? AppColors.darkCard : AppColors.card;
     final textColor = isDark ? AppColors.darkTextPrimary : AppColors.textPrimary;
 
+    // Безопасное чтение данных (предотвращает ошибки типов или null)
+    final studentName = (student.name.isNotEmpty) ? student.name : 'Unknown';
+    final studentSurname = (student.surname.isNotEmpty) ? student.surname : '';
+    final studentKurs = (student.kurs.isNotEmpty) ? student.kurs : 'No Course';
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10)],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+          ),
+        ],
       ),
       child: LayoutBuilder(
         builder: (context, constraints) {
           final isMobile = constraints.maxWidth < 400;
+
           final info = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('${student.name} ${student.surname}',
-                  style: AppTextStyles.heading(isDark: isDark).copyWith(color: textColor)),
+              Text(
+                '$studentName $studentSurname',
+                style: AppTextStyles.heading(isDark: isDark).copyWith(color: textColor),
+              ),
               const SizedBox(height: 4),
-              Text(student.kurs, style: AppTextStyles.subheading(isDark: isDark).copyWith(color: textColor)),
+              Text(
+                studentKurs,
+                style: AppTextStyles.subheading(isDark: isDark).copyWith(color: textColor),
+              ),
               const SizedBox(height: 8),
-              Text('Selected WPM: $selectedWpm',
-                  style: AppTextStyles.body(isDark: isDark).copyWith(color: textColor)),
+              Text(
+                'Selected WPM: $selectedWpm',
+                style: AppTextStyles.body(isDark: isDark).copyWith(color: textColor),
+              ),
             ],
           );
 
@@ -56,7 +74,9 @@ class StudentHeader extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: isSelected ? AppColors.primary : AppColors.backgroundSubtle,
                     foregroundColor: isSelected ? Colors.white : AppColors.textPrimary,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                   ),
                   child: Text('WPM $wpm'),
                 ),
@@ -65,8 +85,18 @@ class StudentHeader extends StatelessWidget {
           );
 
           return isMobile
-              ? Column(crossAxisAlignment: CrossAxisAlignment.start, children: [info, const SizedBox(height: 16), buttons])
-              : Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [info, buttons]);
+              ? Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    info,
+                    const SizedBox(height: 16),
+                    buttons,
+                  ],
+                )
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [info, buttons],
+                );
         },
       ),
     );

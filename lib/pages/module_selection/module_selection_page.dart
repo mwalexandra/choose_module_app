@@ -15,10 +15,7 @@ import 'widgets/module_list_section.dart';
 class ModuleSelectionPage extends StatefulWidget {
   final Student student;
 
-  const ModuleSelectionPage({
-    super.key,
-    required this.student,
-  });
+  const ModuleSelectionPage({super.key, required this.student});
 
   @override
   State<ModuleSelectionPage> createState() => _ModuleSelectionPageState();
@@ -28,13 +25,13 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   final ModulesService _modulesService = ModulesService();
   final StudentsService _studentsService = StudentsService();
 
-  int selectedWpm = 1; // ui показывает 1..3, мы преобразуем в "wpm1"
+  int selectedWpm = 1; // ui показывает 1..3
   bool loading = true;
   bool hasChanges = false;
 
-  List<Module> availableModules = [];      // модули текущего семестра
-  List<String> selectedModuleIds = [];     // id выбранных модулей
-  List<Module> selectedModulesData = [];   // объекты выбранных модулей
+  List<Module> availableModules = [];
+  List<String> selectedModuleIds = [];
+  List<Module> selectedModulesData = [];
 
   @override
   void initState() {
@@ -49,17 +46,24 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
     try {
       final kurs = widget.student.kurs;
 
-      // Получаем конкретный Semester через сервис (существующий метод)
-      final Semester? semester = await _modulesService.getSemester(kurs, _wpmKey);
+      // Получаем Semester из курса по ключу
+      final courseModules = await _modulesService.getCourse(kurs);
+      if (courseModules == null) {
+        debugPrint('❌ Не удалось загрузить курс "$kurs"');
+        setState(() {
+          availableModules = [];
+          selectedModuleIds = [];
+          selectedModulesData = [];
+          hasChanges = false;
+        });
+        return;
+      }
 
+      final Semester? semester = courseModules.semesters[_wpmKey];
       final List<Module> modules = semester?.modules ?? [];
 
-      // Загружаем уже выбранные id (в student.selectedModules хранится Map<String, List<String>>)
-      final List<String> alreadySelected = (widget.student.selectedModules[_wpmKey] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .where((s) => s.isNotEmpty)
-              .toList() ??
-          [];
+      final List<String> alreadySelected =
+          widget.student.selectedModules[_wpmKey] ?? [];
 
       setState(() {
         availableModules = modules;
@@ -83,9 +87,7 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
 
   void _onSelectWpm(int wpm) {
     if (wpm == selectedWpm) return;
-    setState(() {
-      selectedWpm = wpm;
-    });
+    setState(() => selectedWpm = wpm);
     _loadModulesForCurrentWpm();
   }
 
@@ -104,10 +106,8 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
 
   Future<void> _onConfirmSelection() async {
     final wpmKey = _wpmKey;
-    // Обновляем локальный объект студента
     widget.student.selectedModules[wpmKey] = selectedModuleIds;
 
-    // Сохраняем в базу через сервис
     try {
       await _studentsService.updateStudent(widget.student);
       setState(() => hasChanges = false);
@@ -126,7 +126,8 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final screenWidth = MediaQuery.of(context).size.width;
-    final backgroundColor = isDark ? AppColors.darkBackgroundMain : AppColors.backgroundMain;
+    final backgroundColor =
+        isDark ? AppColors.darkBackgroundMain : AppColors.backgroundMain;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -139,30 +140,23 @@ class _ModuleSelectionPageState extends State<ModuleSelectionPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Header принимает весь объект Student
                     StudentHeader(
                       student: widget.student,
                       selectedWpm: selectedWpm,
                       onSelectWpm: _onSelectWpm,
                     ),
                     const SizedBox(height: 24),
-
-                    // Информация о семестре (даты + список модулей кратко)
                     ModuleInfoSection(
                       kurs: widget.student.kurs,
                       selectedWpm: _wpmKey,
                     ),
                     const SizedBox(height: 24),
-
-                    // Выбранные модули (объекты Module)
                     SelectedModulesSection(
                       selectedModules: selectedModulesData,
                       hasChanges: hasChanges,
                       onConfirmSelection: _onConfirmSelection,
                     ),
                     const SizedBox(height: 24),
-
-                    // Список модулей с чекбоксами
                     ModuleListSection(
                       availableModules: availableModules,
                       selectedModuleIds: selectedModuleIds,
