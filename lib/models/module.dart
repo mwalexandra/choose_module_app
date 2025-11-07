@@ -15,11 +15,13 @@ class Module {
 
   factory Module.fromJson(Map<String, dynamic> json) {
     return Module(
-      id: json['id'] ?? '',
-      name: json['name'] ?? '',
-      description: json['description'] ?? '',
-      dozent: json['dozent'] ?? '',
-      participants: json['participants'] ?? 0,
+      id: json['id']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      dozent: json['dozent']?.toString() ?? '',
+      participants: (json['participants'] is int)
+          ? json['participants'] as int
+          : int.tryParse(json['participants']?.toString() ?? '0') ?? 0,
     );
   }
 

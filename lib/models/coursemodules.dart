@@ -14,11 +14,16 @@ class CourseModules {
 
   factory CourseModules.fromJson(String kurs, Map<String, dynamic> json) {
     final semMap = <String, Semester>{};
-    final semestersJson = json['semesters'] as Map<String, dynamic>;
 
-    semestersJson.forEach((key, value) {
-      semMap[key] = Semester.fromJson(key, Map<String, dynamic>.from(value));
-    });
+    final semestersJson = json['semesters'] as Map?;
+    if (semestersJson != null) {
+      semestersJson.forEach((key, value) {
+        semMap[key.toString()] = Semester.fromJson(
+          key.toString(),
+          Map<String, dynamic>.from(value as Map),
+        );
+      });
+    }
 
     return CourseModules(
       kurs: kurs,
@@ -28,14 +33,10 @@ class CourseModules {
   }
 
   Map<String, dynamic> toJson() {
-    final semJson = <String, dynamic>{};
-    semesters.forEach((key, value) {
-      semJson[key] = value.toJson();
-    });
-
     return {
       'lastUpdate': DateHelpers.formatDate(lastUpdate),
-      'semesters': semJson,
+      'semesters': semesters.map((key, value) => MapEntry(key, value.toJson())),
     };
   }
+
 }

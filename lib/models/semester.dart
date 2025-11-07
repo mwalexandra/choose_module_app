@@ -15,9 +15,9 @@ class Semester {
   });
 
   factory Semester.fromJson(String id, Map<String, dynamic> json) {
-    final modulesList = (json['modules'] as List<dynamic>)
-        .map((e) => Module.fromJson(Map<String, dynamic>.from(e)))
-        .toList();
+    final modulesList = (json['modules'] as List?)
+        ?.map((e) => Module.fromJson(Map<String, dynamic>.from(e as Map)))
+        .toList() ?? [];
 
     return Semester(
       id: id,

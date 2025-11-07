@@ -20,8 +20,10 @@ class Student {
     final Map<String, List<String>> modules = {}; // <"wpm1", ["moduleId1", "moduleId2"]>
 
     if (json['selectedModules'] != null) {
-      (json['selectedModules'] as Map<String, dynamic>).forEach((key, value) {
-        modules[key] = List<String>.from(value.values);
+      final sm = json['selectedModules'] as Map?;
+      sm?.forEach((key, value) {
+        final list = (value as Map?)?.values.map((e) => e.toString()).toList() ?? [];
+        modules[key.toString()] = list;
       });
     }
 
@@ -37,17 +39,12 @@ class Student {
 
   // Преобразование обратно в JSON
   Map<String, dynamic> toJson() {
-    final modulesJson = <String, dynamic>{};
-    selectedModules.forEach((key, value) {
-      modulesJson[key] = value.asMap().map((i, v) => MapEntry(i.toString(), v));
-    });
-
     return {
       'name': name,
       'surname': surname,
       'kurs': kurs,
       'password': password,
-      'selectedModules': modulesJson,
+      'selectedModules': selectedModules.map((key, value) => MapEntry(key, value)),
     };
   }
 }
