@@ -1,8 +1,8 @@
-import 'semester.dart';
 import '../services/date_helpers.dart';
+import 'semester.dart';
 
 class CourseModules {
-  final String kurs; // bspw. "pi23"
+  final String kurs;
   final DateTime lastUpdate;
   final Map<String, Semester> semesters;
 
@@ -14,16 +14,14 @@ class CourseModules {
 
   factory CourseModules.fromJson(String kurs, Map<String, dynamic> json) {
     final semMap = <String, Semester>{};
+    final semJson = json['semesters'] as Map? ?? {};
 
-    final semestersJson = json['semesters'] as Map?;
-    if (semestersJson != null) {
-      semestersJson.forEach((key, value) {
-        semMap[key.toString()] = Semester.fromJson(
-          key.toString(),
-          Map<String, dynamic>.from(value as Map),
-        );
-      });
-    }
+    semJson.forEach((key, value) {
+      if (value is Map) {
+        semMap[key.toString()] =
+            Semester.fromJson(key.toString(), Map<String, dynamic>.from(value));
+      }
+    });
 
     return CourseModules(
       kurs: kurs,
@@ -33,10 +31,14 @@ class CourseModules {
   }
 
   Map<String, dynamic> toJson() {
+    final semJson = <String, dynamic>{};
+    semesters.forEach((key, value) {
+      semJson[key] = value.toJson();
+    });
+
     return {
       'lastUpdate': DateHelpers.formatDate(lastUpdate),
-      'semesters': semesters.map((key, value) => MapEntry(key, value.toJson())),
+      'semesters': semJson,
     };
   }
-
 }

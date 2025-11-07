@@ -2,7 +2,7 @@ import 'module.dart';
 import '../services/date_helpers.dart';
 
 class Semester {
-  final String id; // bspw. "wpm1"
+  final String id;
   final DateTime chooseOpenDate;
   final DateTime chooseCloseDate;
   final List<Module> modules;
@@ -16,8 +16,9 @@ class Semester {
 
   factory Semester.fromJson(String id, Map<String, dynamic> json) {
     final modulesList = (json['modules'] as List?)
-        ?.map((e) => Module.fromJson(Map<String, dynamic>.from(e as Map)))
-        .toList() ?? [];
+            ?.map((e) => Module.fromJson(Map<String, dynamic>.from(e as Map)))
+            .toList() ??
+        [];
 
     return Semester(
       id: id,
@@ -27,12 +28,9 @@ class Semester {
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'chooseOpenDate': DateHelpers.formatDate(chooseOpenDate),
-      'chooseCloseDate': DateHelpers.formatDate(chooseCloseDate),
-      'modules': modules.map((m) => m.toJson()).toList(),
-    };
-  }
-
+  Map<String, dynamic> toJson() => {
+        'chooseOpenDate': DateHelpers.formatDate(chooseOpenDate),
+        'chooseCloseDate': DateHelpers.formatDate(chooseCloseDate),
+        'modules': modules.map((m) => m.toJson()).toList(),
+      };
 }

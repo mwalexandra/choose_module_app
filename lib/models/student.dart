@@ -15,14 +15,17 @@ class Student {
     required this.selectedModules,
   });
 
-  // Преобразование из JSON (Firebase snapshot)
   factory Student.fromJson(String id, Map<String, dynamic> json) {
-    final Map<String, List<String>> modules = {}; // <"wpm1", ["moduleId1", "moduleId2"]>
+    final modules = <String, List<String>>{};
+    final rawModules = json['selectedModules'] as Map? ?? {};
 
-    final sm = json['selectedModules'] as Map?;
-    sm?.forEach((key, value) {
-      final list = (value as List?)?.map((e) => e.toString()).toList() ?? [];
-      modules[key.toString()] = list;
+    rawModules.forEach((key, value) {
+      if (value is List) {
+        modules[key.toString()] = value.map((e) => e.toString()).toList();
+      } else if (value is Map) {
+        modules[key.toString()] =
+            value.values.map((e) => e.toString()).toList();
+      }
     });
 
     return Student(
@@ -35,14 +38,13 @@ class Student {
     );
   }
 
-  // Преобразование обратно в JSON
   Map<String, dynamic> toJson() {
     return {
       'name': name,
       'surname': surname,
       'kurs': kurs,
       'password': password,
-      'selectedModules': selectedModules.map((key, value) => MapEntry(key, value)),
+      'selectedModules': selectedModules,
     };
   }
 }
